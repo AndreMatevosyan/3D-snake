@@ -30,55 +30,135 @@ class Snake {
     }
     
     initialize() {
-        // TODO: Create snake segments
-        // TODO: Initialize segment positions
-        // TODO: Create meshes for each segment
+        const { segmentLength, initialRadius } = CONFIG.snake;
+
+        // Initialize segment positions along the direction (head at front)
+        for (let i = 0; i < this.length; i++) {
+            const offset = this.direction.clone().multiplyScalar(-i * segmentLength);
+            this.segmentPositions.push(this.position.clone().add(offset));
+        }
+
+        // Create meshes for each segment
+        for (let i = 0; i < this.length; i++) {
+            const isHead = i === 0;
+            const segmentRadius = isHead ? this.radius * 1.2 : this.radius;
+
+            const geometry = new THREE.SphereGeometry(segmentRadius, 16, 12);
+            const material = new THREE.MeshStandardMaterial({
+                color: isHead ? 0x44dd44 : 0x22aa22,
+                metalness: 0.2,
+                roughness: 0.6,
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.position.copy(this.segmentPositions[i]);
+
+            this.segments.push(mesh);
+            this.group.add(mesh);
+        }
+
+        this.head = this.segments[0];
     }
     
     update(deltaTime, inputRotation) {
-        // TODO: Update snake rotation based on input
-        // TODO: Update snake position based on velocity
-        // TODO: Update segment positions to follow head
-        // TODO: Update segment meshes
+        if (!inputRotation) return;
+
+        this.yaw = inputRotation.yaw;
+        this.pitch = inputRotation.pitch;
+        this.updateDirection();
+        this.move(this.direction, deltaTime);
     }
-    
+
+    updateDirection() {
+        this.direction.x = Math.sin(this.yaw) * Math.cos(this.pitch);
+        this.direction.y = Math.sin(this.pitch);
+        this.direction.z = Math.cos(this.yaw) * Math.cos(this.pitch);
+        this.direction.normalize();
+    }
+
     move(direction, deltaTime) {
-        // TODO: Move snake in given direction
-        // TODO: Update all segment positions
+        const distance = this.velocity * deltaTime;
+        this.position.addScaledVector(direction, distance);
+
+        this.segmentPositions[0].copy(this.position);
+
+        const { segmentLength } = CONFIG.snake;
+        for (let i = 1; i < this.segmentPositions.length; i++) {
+            const prev = this.segmentPositions[i - 1];
+            const curr = this.segmentPositions[i];
+            const toPrev = new THREE.Vector3().subVectors(prev, curr);
+            const dist = toPrev.length();
+            if (dist > 0.001) {
+                toPrev.normalize();
+                curr.copy(prev).addScaledVector(toPrev, -segmentLength);
+            }
+        }
+
+        for (let i = 0; i < this.segments.length; i++) {
+            this.segments[i].position.copy(this.segmentPositions[i]);
+        }
     }
-    
+
     addSegment() {
-        // TODO: Add a new body segment
-        // TODO: Update length
-        // TODO: Increase radius slightly
+        const { segmentLength, radiusIncrement, maxRadius } = CONFIG.snake;
+        const tail = this.segmentPositions[this.segmentPositions.length - 1];
+        const prev = this.segmentPositions[this.segmentPositions.length - 2];
+        const dir = new THREE.Vector3().subVectors(tail, prev).normalize();
+        const newPos = tail.clone().addScaledVector(dir, -segmentLength);
+
+        this.segmentPositions.push(newPos);
+        this.radius = Math.min(this.radius + radiusIncrement, maxRadius);
+
+        const geometry = new THREE.SphereGeometry(this.radius, 16, 12);
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x22aa22,
+            metalness: 0.2,
+            roughness: 0.6,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.position.copy(newPos);
+
+        this.segments.push(mesh);
+        this.group.add(mesh);
+        this.length++;
     }
-    
+
     setVelocity(speed) {
-        // TODO: Update snake speed
+        this.velocity = Math.min(speed, CONFIG.snake.maxSpeed);
     }
-    
+
     getSegments() {
-        // TODO: Return all segment meshes
         return this.segments;
     }
-    
+
     getHeadPosition() {
-        // TODO: Return head position
         return this.position.clone();
     }
-    
+
+    getDirection() {
+        return this.direction.clone();
+    }
+
     getHeadMesh() {
-        // TODO: Return head mesh
         return this.head;
     }
-    
+
     getGroup() {
         return this.group;
     }
-    
+
     dispose() {
-        // TODO: Dispose of all segment geometries and materials
-        // TODO: Remove group from scene
+        for (const segment of this.segments) {
+            segment.geometry?.dispose();
+            segment.material?.dispose();
+        }
+        this.segments = [];
+        this.segmentPositions = [];
+        this.head = null;
     }
 }
 

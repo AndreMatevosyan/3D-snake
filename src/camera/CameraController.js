@@ -28,37 +28,37 @@ class CameraController {
         
         // Current target to follow
         this.targetPosition = new THREE.Vector3(0, 0, 0);
-        
+        this.targetDirection = new THREE.Vector3(0, 0, 1);
+
         this.updateCamera();
     }
-    
+
     update(deltaTime) {
-        // Get rotation from input controller
-        const { yaw, pitch } = this.inputController.getRotation();
-        
-        // Calculate camera position based on yaw and pitch rotation
         const distance = this.followDistance;
         const height = this.followHeight;
-        
-        // Convert yaw and pitch to Cartesian coordinates
-        const horizontalDistance = distance * Math.cos(pitch);
-        const verticalOffset = distance * Math.sin(pitch) + height;
-        
-        const desiredX = this.targetPosition.x + horizontalDistance * Math.sin(yaw);
-        const desiredY = this.targetPosition.y + verticalOffset;
-        const desiredZ = this.targetPosition.z + horizontalDistance * Math.cos(yaw);
-        
+
+        // Position camera behind the snake head (opposite to snake direction)
+        const horizontalDir = new THREE.Vector3(
+            this.targetDirection.x,
+            0,
+            this.targetDirection.z
+        ).normalize();
+
+        if (horizontalDir.lengthSq() < 0.01) {
+            horizontalDir.set(0, 0, -1);
+        }
+
+        const desiredX = this.targetPosition.x - horizontalDir.x * distance;
+        const desiredY = this.targetPosition.y + height;
+        const desiredZ = this.targetPosition.z - horizontalDir.z * distance;
+
         // Lerp camera position for smooth movement
         this.position.x += (desiredX - this.position.x) * this.lerpFactor;
         this.position.y += (desiredY - this.position.y) * this.lerpFactor;
         this.position.z += (desiredZ - this.position.z) * this.lerpFactor;
-        
-        // Look ahead with offset
-        const lookAheadX = this.targetPosition.x + this.lookAheadDistance * Math.sin(yaw);
-        const lookAheadY = this.targetPosition.y;
-        const lookAheadZ = this.targetPosition.z + this.lookAheadDistance * Math.cos(yaw);
-        
-        this.lookAtPoint.set(lookAheadX, lookAheadY, lookAheadZ);
+
+        // Look at snake head, slightly ahead in its direction
+        this.lookAtPoint.copy(this.targetPosition).addScaledVector(this.targetDirection, this.lookAheadDistance);
         
         // Apply camera shake effect
         if (this.shakeIntensity > 0.001) {
@@ -84,8 +84,11 @@ class CameraController {
         this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
     }
     
-    setTarget(targetPosition) {
+    setTarget(targetPosition, targetDirection) {
         this.targetPosition.copy(targetPosition);
+        if (targetDirection) {
+            this.targetDirection.copy(targetDirection);
+        }
     }
     
     getWorldDirection() {

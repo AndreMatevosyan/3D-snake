@@ -11,6 +11,7 @@ import InputController from './input/InputController.js';
 import CollisionSystem from './systems/CollisionSystem.js';
 import LevelSystem from './systems/LevelSystem.js';
 import RenderSystem from './systems/RenderSystem.js';
+import Snake from './entities/Snake.js';
 
 class Game {
     constructor() {
@@ -82,6 +83,15 @@ class Game {
         // Initialize CameraController
         this.cameraController = new CameraController(this.camera, this.inputController);
         console.log('CameraController initialized');
+
+        // Create snake and add to scene
+        this.snake = new Snake(new THREE.Vector3(0, 0, 0));
+        this.snake.initialize();
+        this.scene.addObject(this.snake.getGroup());
+        this.cameraController.setTarget(
+            this.snake.getHeadPosition(),
+            this.snake.getDirection()
+        );
     }
     
     start() {
@@ -104,8 +114,17 @@ class Game {
         
         this.frameCount++;
         
-        // Update camera controller
-        if (this.cameraController) {
+        // Update snake
+        if (this.snake && this.inputController) {
+            this.snake.update(this.deltaTime, this.inputController.getRotation());
+        }
+
+        // Update camera to follow snake (behind head)
+        if (this.cameraController && this.snake) {
+            this.cameraController.setTarget(
+                this.snake.getHeadPosition(),
+                this.snake.getDirection()
+            );
             this.cameraController.update(this.deltaTime);
         }
         

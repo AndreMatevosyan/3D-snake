@@ -25,11 +25,11 @@ export const CONFIG = {
     // Snake
     snake: {
         initialLength: 3,
-        initialSpeed: 40,
+        initialSpeed: 12,
         initialRadius: 1,
         segmentLength: 2,
-        maxSpeed: 150,
-        speedIncrement: 10,
+        maxSpeed: 40,
+        speedIncrement: 4,
         radiusIncrement: 0.15,
         maxRadius: 2.5,
     },

@@ -20,6 +20,27 @@ class GameScene {
         this.setupBackground();
         this.setupFog();
         this.setupLighting();
+        this.setupDevFloor();
+    }
+
+    /** Temporary floor for development - shows snake movement. Remove when cube/level is ready. */
+    setupDevFloor() {
+        const size = 80;
+        const geometry = new THREE.PlaneGeometry(size, size);
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x1a1a1a,
+            metalness: 0.1,
+            roughness: 0.9,
+        });
+        const floor = new THREE.Mesh(geometry, material);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -2;
+        floor.receiveShadow = true;
+        this.scene.add(floor);
+
+        const gridHelper = new THREE.GridHelper(size, 20, 0x333333, 0x222222);
+        gridHelper.position.y = -1.99;
+        this.scene.add(gridHelper);
     }
 
     setupBackground() {
