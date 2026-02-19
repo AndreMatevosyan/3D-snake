@@ -40,6 +40,7 @@ class Game {
         // Time
         this.lastTime = 0;
         this.deltaTime = 0;
+        this.frameCount = 0;
         
         this.initialize();
     }
@@ -59,6 +60,10 @@ class Game {
         console.log('RenderSystem initialized');
         console.log('Canvas created:', this.renderSystem.getCanvas());
         console.log('Size:', this.renderSystem.getSize());
+        
+        // Initialize InputController with canvas
+        this.inputController = new InputController(this.renderSystem.getCanvas());
+        console.log('InputController initialized');
     }
     
     start() {
@@ -73,6 +78,25 @@ class Game {
         // Handle collisions
         // Render the scene
         // Continue animation loop
+        
+        this.frameCount++;
+        
+        // DEBUG: Log input controller state every 30 frames
+        if (this.frameCount % 240 === 0 && this.inputController) {
+            const rotation = this.inputController.getRotation();
+            const pressedKeys = Object.entries(this.inputController.keys)
+                .filter(([key, pressed]) => pressed)
+                .map(([key]) => key);
+            
+            console.log(
+                `[Frame ${this.frameCount}] Rotation - Yaw: ${rotation.yaw.toFixed(2)}, Pitch: ${rotation.pitch.toFixed(2)} | ` +
+                `Pointer Locked: ${this.inputController.isPointerLocked} | ` +
+                `Keys: ${pressedKeys.length > 0 ? pressedKeys.join(', ') : 'none'}`
+            );
+        }
+        
+        // Continue the game loop
+        window.requestAnimationFrame(this.gameLoop.bind(this));
     }
     
     update(deltaTime) {
