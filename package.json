@@ -1,0 +1,30 @@
+{
+  "name": "3d-snake",
+  "version": "1.0.0",
+  "description": "A browser-based 3D arcade game where you control a snake trapped inside a transparent cube. Fly freely in 3D space, eat apples to grow, and escape the cube to advance to the next level.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AndreMatevosyan/3D-snake.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/AndreMatevosyan/3D-snake/issues"
+  },
+  "homepage": "https://github.com/AndreMatevosyan/3D-snake#readme",
+  "dependencies": {
+    "three": "^0.183.0"
+  },
+  "devDependencies": {
+    "vite": "^7.3.1"
+  }
+}
