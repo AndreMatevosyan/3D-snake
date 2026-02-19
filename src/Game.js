@@ -52,6 +52,13 @@ class Game {
         // - Setup InputController
         // - Initialize game entities (Snake, Apple, Cube)
         // - Setup systems (CollisionSystem, LevelSystem, RenderSystem)
+        
+        const container = document.getElementById('game-container');
+        this.renderSystem = new RenderSystem(container);
+
+        console.log('RenderSystem initialized');
+        console.log('Canvas created:', this.renderSystem.getCanvas());
+        console.log('Size:', this.renderSystem.getSize());
     }
     
     start() {

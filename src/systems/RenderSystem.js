@@ -17,29 +17,37 @@ class RenderSystem {
     }
     
     initialize() {
-        // TODO: Create WebGLRenderer
-        // TODO: Configure renderer settings (antialias, pixel ratio, etc.)
-        // TODO: Set renderer size
-        // TODO: Append canvas to container
-        // TODO: Setup window resize listener
+        this.renderer = new THREE.WebGLRenderer({
+            antialias: CONFIG.rendering.antialiasing,
+            alpha: true,
+            precision: 'highp'
+        });
+
+        this.renderer.setPixelRatio(CONFIG.rendering.pixelRatio);
+        this.renderer.setSize(this.width, this.height);
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFShadowShadowMap;
+
+        this.container.appendChild(this.renderer.domElement);
+
+        window.addEventListener('resize', () => this.onWindowResize());
     }
     
     render(scene, camera) {
-        // TODO: Render the scene with given camera
+        this.renderer.render(scene, camera);
     }
     
     setSize(width, height) {
-        // TODO: Update renderer size
-        // TODO: Update camera aspect ratio
+        this.renderer.setSize(width, height);
     }
     
     onWindowResize() {
-        // TODO: Handle window resize event
-        // TODO: Update renderer and camera dimensions
+        this.width = this.container.clientWidth;
+        this.height = this.container.clientHeight;
+        this.setSize(this.width, this.height);
     }
     
     getCanvas() {
-        // TODO: Return the renderer's canvas element
         return this.renderer.domElement;
     }
     
@@ -52,8 +60,9 @@ class RenderSystem {
     }
     
     dispose() {
-        // TODO: Dispose of renderer and remove canvas
-        // TODO: Remove window resize listener
+        window.removeEventListener('resize', () => this.onWindowResize());
+        this.renderer.dispose();
+        this.container.removeChild(this.renderer.domElement);
     }
 }
 
