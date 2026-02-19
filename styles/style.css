@@ -33,6 +33,67 @@ body {
     pointer-events: none;
 }
 
+#crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    pointer-events: none;
+}
+
+#crosshair::before,
+#crosshair::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    background: rgba(0, 255, 0, 0.95);
+    box-shadow: 0 0 4px #00ff00;
+    transform: translate(-50%, -50%);
+}
+
+#crosshair::before {
+    width: 2px;
+    height: 10px;
+}
+
+#crosshair::after {
+    width: 10px;
+    height: 2px;
+}
+
+#wall-distance-dial {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    min-width: 72px;
+    padding: 10px 16px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #00ff00;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+#wall-distance-value {
+    color: #00ff00;
+    text-shadow: 0 0 8px #00ff00;
+    line-height: 1.2;
+}
+
+#wall-distance-dial .dial-unit {
+    font-size: 11px;
+    color: #00aa00;
+    margin-top: 2px;
+}
+
 #hud {
     position: absolute;
     top: 20px;
@@ -76,6 +137,11 @@ body {
 
 .overlay.active {
     display: flex;
+}
+
+body.game-over #crosshair,
+body.game-over #wall-distance-dial {
+    display: none;
 }
 
 .overlay-content {

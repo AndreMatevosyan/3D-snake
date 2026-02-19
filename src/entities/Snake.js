@@ -102,14 +102,13 @@ class Snake {
     }
 
     addSegment() {
-        const { segmentLength, radiusIncrement, maxRadius } = CONFIG.snake;
+        const { segmentLength } = CONFIG.snake;
         const tail = this.segmentPositions[this.segmentPositions.length - 1];
         const prev = this.segmentPositions[this.segmentPositions.length - 2];
         const dir = new THREE.Vector3().subVectors(tail, prev).normalize();
         const newPos = tail.clone().addScaledVector(dir, -segmentLength);
 
         this.segmentPositions.push(newPos);
-        this.radius = Math.min(this.radius + radiusIncrement, maxRadius);
 
         const geometry = new THREE.SphereGeometry(this.radius, 16, 12);
         const material = new THREE.MeshStandardMaterial({

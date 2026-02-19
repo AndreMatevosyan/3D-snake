@@ -90,6 +90,16 @@ export function toDegrees(radians) {
 }
 
 /**
+ * Distance from a point to the nearest face of an axis-aligned box
+ */
+export function distanceToBoxBounds(position, min, max) {
+    const dx = Math.min(position.x - min.x, max.x - position.x);
+    const dy = Math.min(position.y - min.y, max.y - position.y);
+    const dz = Math.min(position.z - min.z, max.z - position.z);
+    return Math.min(dx, dy, dz);
+}
+
+/**
  * Update UI elements
  */
 export function updateHUD(level, score, length) {
@@ -119,9 +129,11 @@ export function showOverlay(title, message, buttonText, callback) {
     const button = overlay.querySelector('.button');
     button.addEventListener('click', () => {
         overlay.remove();
+        document.body.classList.remove('game-over');
         if (callback) callback();
     });
-    
+
+    document.body.classList.add('game-over');
     document.body.appendChild(overlay);
 }
 

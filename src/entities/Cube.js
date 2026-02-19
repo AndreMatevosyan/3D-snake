@@ -15,6 +15,7 @@ class Cube {
         
         // Meshes for cube walls
         this.walls = [];
+        this.edgeLines = [];
         this.geometries = [];
         this.materials = [];
         this.group = new THREE.Group();
@@ -27,18 +28,25 @@ class Cube {
     }
     
     initialize() {
-        const { wallThickness, wallOpacity } = CONFIG.cube;
+        const { wallThickness } = CONFIG.cube;
         const halfSize = this.size / 2;
-        
-        // Shared material for walls (high opacity for debug visibility)
-        const material = new THREE.MeshPhongMaterial({
-            color: 0x44dd88,
+
+        // Glass material: very transparent so you can see through when camera is outside the box
+        const material = new THREE.MeshPhysicalMaterial({
+            color: 0xe8f4fc,
             transparent: true,
-            opacity: 0.85,
+            opacity: 0.12,
+            roughness: 0.02,
+            metalness: 0.02,
             side: THREE.DoubleSide,
-            depthWrite: true,
-            shininess: 80,
-            specular: 0x88ffaa,
+            depthWrite: false,
+        });
+        this.materials.push(material);
+
+        // Edge material: visible lines that define each wall boundary (helps gauge distance when approaching)
+        const edgeMaterial = new THREE.LineBasicMaterial({
+            color: 0x88ccff,
+            linewidth: 2,
         });
         this.materials.push(material);
         
@@ -52,18 +60,27 @@ class Cube {
             ['back', [0, 0, -halfSize - wallThickness / 2], [this.size, this.size, wallThickness]],
         ];
         
+        this.materials.push(edgeMaterial);
+
         for (const [name, pos, dims] of wallDefs) {
             const geometry = createBoxGeometry(dims[0], dims[1], dims[2]);
             this.geometries.push(geometry);
-            
+
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.set(pos[0], pos[1], pos[2]);
             mesh.userData.wallName = name;
             mesh.castShadow = true;
             mesh.receiveShadow = true;
-            
+
+            const edges = new THREE.EdgesGeometry(geometry);
+            const edgeLine = new THREE.LineSegments(edges, edgeMaterial);
+            edgeLine.position.set(pos[0], pos[1], pos[2]);
+
             this.walls.push(mesh);
+            this.edgeLines.push(edgeLine);
+            this.geometries.push(edges);
             this.group.add(mesh);
+            this.group.add(edgeLine);
         }
         
         this.group.position.copy(this.position);
@@ -111,7 +128,8 @@ class Cube {
         const t = Math.min(1, this.breakProgress / this.breakDuration);
         
         if (this.breakingEffect === 'dissolve') {
-            const opacity = Math.max(0, CONFIG.cube.wallOpacity * (1 - t));
+            const baseOpacity = 0.12;
+            const opacity = Math.max(0, baseOpacity * (1 - t));
             this.materials.forEach(m => { m.opacity = opacity; });
         } else if (this.breakingEffect === 'shatter') {
             this.walls.forEach((wall) => {
@@ -125,10 +143,11 @@ class Cube {
     
     resize(newSize) {
         const clampedSize = Math.max(CONFIG.cube.minSize, newSize);
-        
-        // Remove old walls from group and dispose
+
         this.walls.forEach(wall => this.group.remove(wall));
+        this.edgeLines.forEach(line => this.group.remove(line));
         this.walls = [];
+        this.edgeLines = [];
         this.geometries.forEach(g => g.dispose());
         this.geometries = [];
         this.materials.forEach(m => m.dispose());
@@ -150,6 +169,7 @@ class Cube {
         this.geometries.forEach(g => g.dispose());
         this.materials.forEach(m => m.dispose());
         this.walls = [];
+        this.edgeLines = [];
         this.geometries = [];
         this.materials = [];
     }

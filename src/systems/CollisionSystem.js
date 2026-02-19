@@ -10,45 +10,66 @@ class CollisionSystem {
         this.lastCollisionCheckTime = 0;
         this.checkInterval = CONFIG.physics.collisionCheckInterval;
     }
-    
+
     update(deltaTime, snake, apple, cube) {
-        // TODO: Check if enough time has passed for collision check
-        // TODO: Check snake-apple collision
-        // TODO: Check snake-self collision
-        // TODO: Check snake-cube collision
+        const result = { appleCollision: false, selfCollision: false, wallCollision: false };
+        if (!snake) return result;
+
+        if (apple?.getMesh()) {
+            result.appleCollision = this.checkSnakeAppleCollision(snake, apple);
+        }
+        result.selfCollision = this.checkSnakeSelfCollision(snake);
+        if (cube) {
+            result.wallCollision = this.checkSnakeCubeCollision(snake, cube);
+        }
+        return result;
     }
-    
+
     checkSnakeAppleCollision(snake, apple) {
-        // TODO: Detect if snake head collides with apple
-        // Returns boolean
-        return false;
+        const headPos = snake.getHeadPosition();
+        const applePos = apple.getPosition();
+        const headRadius = snake.radius * 1.2;
+        const appleRadius = CONFIG.apple.radius;
+        const dist = this.calculateDistance(headPos, applePos);
+        return dist < headRadius + appleRadius;
     }
     
     checkSnakeSelfCollision(snake) {
-        // TODO: Detect if snake collides with its own body
-        // Skip checking first few segments (CONFIG.physics.selfCollisionThreshold)
-        // Returns boolean
+        const threshold = CONFIG.physics.selfCollisionThreshold;
+        if (snake.length <= threshold) return false;
+
+        const headPos = snake.getHeadPosition();
+        const headRadius = snake.radius * 1.2;
+        const bodyRadius = snake.radius;
+
+        for (let i = threshold; i < snake.segmentPositions.length; i++) {
+            const segmentPos = snake.segmentPositions[i];
+            const dist = this.calculateDistance(headPos, segmentPos);
+            if (dist < headRadius + bodyRadius) {
+                return true;
+            }
+        }
         return false;
     }
     
     checkSnakeCubeCollision(snake, cube) {
-        // TODO: Detect if snake hits the cube walls
-        // Snake should be confined within cube
-        // Returns collision data or null
-        return null;
+        const headPos = snake.getHeadPosition();
+        const headRadius = snake.radius * 1.2;
+        const { min, max } = cube.getBounds();
+
+        if (headPos.x - headRadius < min.x ||
+            headPos.x + headRadius > max.x ||
+            headPos.y - headRadius < min.y ||
+            headPos.y + headRadius > max.y ||
+            headPos.z - headRadius < min.z ||
+            headPos.z + headRadius > max.z) {
+            return true;
+        }
+        return false;
     }
     
     calculateDistance(point1, point2) {
-        // TODO: Calculate distance between two points
-        // Helper method for collision detection
-        return 0;
-    }
-    
-    handleAppleCollision(snake, apple) {
-        // TODO: Called when snake eats apple
-        // - Add segment to snake
-        // - Increment score
-        // - Respawn apple
+        return point1.distanceTo(point2);
     }
     
     handleSelfCollision() {

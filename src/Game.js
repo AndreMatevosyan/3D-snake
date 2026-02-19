@@ -12,7 +12,9 @@ import CollisionSystem from './systems/CollisionSystem.js';
 import LevelSystem from './systems/LevelSystem.js';
 import RenderSystem from './systems/RenderSystem.js';
 import Snake from './entities/Snake.js';
+import Apple from './entities/Apple.js';
 import Cube from './entities/Cube.js';
+import { randomPointInBounds, updateHUD, showOverlay, distanceToBoxBounds } from './utils/helpers.js';
 
 class Game {
     constructor() {
@@ -30,7 +32,7 @@ class Game {
         this.renderer = null;
         this.cameraController = null;
         this.inputController = null;
-        this.collisionSystem = null;
+        this.collisionSystem = new CollisionSystem();
         this.levelSystem = null;
         this.renderSystem = null;
         
@@ -98,6 +100,25 @@ class Game {
             this.snake.getHeadPosition(),
             this.snake.getDirection()
         );
+
+        // Create apple and spawn first one
+        this.apple = new Apple();
+        this.apple.initialize();
+        this.spawnApple();
+    }
+
+    spawnApple() {
+        const { min, max } = this.cube.getBounds();
+        const margin = 4;
+        const spawnMin = min.clone().addScalar(margin);
+        const spawnMax = max.clone().subScalar(margin);
+        const position = randomPointInBounds(spawnMin, spawnMax);
+
+        if (this.apple.getMesh()) {
+            this.scene.removeObject(this.apple.getMesh());
+        }
+        this.apple.spawn(position);
+        this.scene.addObject(this.apple.getMesh());
     }
     
     start() {
@@ -125,6 +146,30 @@ class Game {
             this.snake.update(this.deltaTime, this.inputController.getRotation());
         }
 
+        // Update apple
+        if (this.apple) {
+            this.apple.update(this.deltaTime);
+        }
+
+        // Collision: snake eats apple, or snake hits itself
+        if (this.collisionSystem && this.snake) {
+            const collision = this.collisionSystem.update(
+                this.deltaTime,
+                this.snake,
+                this.apple,
+                this.cube
+            );
+            if (collision.appleCollision) {
+                this.snake.addSegment();
+                this.score++;
+                this.spawnApple();
+            }
+            if (collision.selfCollision || collision.wallCollision) {
+                this.gameOver();
+                return;
+            }
+        }
+
         // Update camera to follow snake (behind head)
         if (this.cameraController && this.snake) {
             this.cameraController.setTarget(
@@ -134,6 +179,18 @@ class Game {
             this.cameraController.update(this.deltaTime);
         }
         
+        // Update HUD
+        updateHUD(this.currentLevel, this.score, this.snake?.length ?? 0);
+
+        // Update wall distance dial
+        if (this.snake && this.cube) {
+            const headPos = this.snake.getHeadPosition();
+            const { min, max } = this.cube.getBounds();
+            const dist = distanceToBoxBounds(headPos, min, max);
+            const el = document.getElementById('wall-distance-value');
+            if (el) el.textContent = Math.max(0, dist).toFixed(1);
+        }
+
         // Render the scene
         if (this.scene && this.camera && this.renderSystem) {
             this.renderSystem.render(this.scene.getScene(), this.camera);
@@ -153,8 +210,9 @@ class Game {
             );
         }
         
-        // Continue the game loop
-        window.requestAnimationFrame(this.gameLoop.bind(this));
+        if (this.isRunning) {
+            window.requestAnimationFrame(this.gameLoop.bind(this));
+        }
     }
     
     update(deltaTime) {
@@ -179,14 +237,35 @@ class Game {
     }
     
     gameOver() {
-        // TODO: Handle game over state
-        // - Stop game loop
-        // - Show game over screen
-        // - Offer restart option
+        this.isRunning = false;
+        document.exitPointerLock?.();
+        const message = `Score: ${this.score}`;
+        showOverlay('Game Over', message, 'Restart', () => this.restart());
     }
-    
+
     restart() {
-        // TODO: Reset game state and restart
+        this.scene.clear();
+
+        this.score = 0;
+        this.currentLevel = 1;
+        this.lastTime = 0;
+        this.frameCount = 0;
+
+        this.snake = new Snake(new THREE.Vector3(0, 0, 0));
+        this.snake.initialize();
+        this.scene.addObject(this.snake.getGroup());
+
+        this.apple.initialize();
+        this.spawnApple();
+
+        this.cameraController.setTarget(
+            this.snake.getHeadPosition(),
+            this.snake.getDirection()
+        );
+
+        updateHUD(this.currentLevel, this.score, this.snake.length);
+        this.isRunning = true;
+        window.requestAnimationFrame(this.gameLoop.bind(this));
     }
     
     pause() {

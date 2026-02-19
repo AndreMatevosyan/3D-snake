@@ -44,8 +44,8 @@ export const CONFIG = {
 
     // Cube (Container)
     cube: {
-        initialSize: 80, // Matches temporary dev floor (GameScene setupDevFloor)
-        minSize: 40,
+        initialSize: 60,
+        minSize: 30,
         sizeDecrement: 5,
         wallThickness: 0.5,
         wallOpacity: 0.2,
