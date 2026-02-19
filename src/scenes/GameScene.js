@@ -10,44 +10,95 @@ class GameScene {
     constructor() {
         this.scene = null;
         this.lights = {};
-        
+        this.dynamicObjects = new Set(); // Track non-light objects for clear()
+
         this.initialize();
     }
-    
+
     initialize() {
-        // TODO: Create THREE.Scene
-        // TODO: Setup scene background and fog
-        // TODO: Create lighting system
-        //   - Ambient light for general visibility
-        //   - Directional light for shadows
-        //   - Point lights for environment
+        this.scene = new THREE.Scene();
+        this.setupBackground();
+        this.setupFog();
+        this.setupLighting();
     }
-    
+
+    setupBackground() {
+        const { backgroundColor } = CONFIG.scene;
+        this.scene.background = new THREE.Color(backgroundColor);
+    }
+
+    setupFog() {
+        const { fogColor, fogNear, fogFar } = CONFIG.scene;
+        this.scene.fog = new THREE.Fog(
+            new THREE.Color(fogColor),
+            fogNear,
+            fogFar
+        );
+    }
+
     setupLighting() {
-        // TODO: Configure lights based on CONFIG
-        // - Ambient light
-        // - Directional light with shadow mapping
-        // - Optional point lights for visual effect
+        const { shadowMapResolution } = CONFIG.rendering;
+
+        // Ambient light for general visibility
+        this.lights.ambient = new THREE.AmbientLight(0xffffff, 0.4);
+        this.scene.add(this.lights.ambient);
+
+        // Directional light (main sun) for shadows and form
+        this.lights.directional = new THREE.DirectionalLight(0xffffff, 0.8);
+        this.lights.directional.position.set(25, 40, 25);
+        this.lights.directional.castShadow = true;
+
+        this.lights.directional.shadow.mapSize.width = shadowMapResolution;
+        this.lights.directional.shadow.mapSize.height = shadowMapResolution;
+        this.lights.directional.shadow.camera.near = 0.5;
+        this.lights.directional.shadow.camera.far = 150;
+        this.lights.directional.shadow.camera.left = -50;
+        this.lights.directional.shadow.camera.right = 50;
+        this.lights.directional.shadow.camera.top = 50;
+        this.lights.directional.shadow.camera.bottom = -50;
+        this.lights.directional.shadow.bias = -0.0001;
+
+        this.scene.add(this.lights.directional);
+
+        // Fill light from below-front for softer shadows
+        this.lights.fill = new THREE.DirectionalLight(0x88aacc, 0.2);
+        this.lights.fill.position.set(-15, -10, 20);
+        this.scene.add(this.lights.fill);
+
+        // Point light for subtle environment glow (centered above play area)
+        this.lights.point = new THREE.PointLight(0x6699ff, 0.3, 100);
+        this.lights.point.position.set(0, 30, 0);
+        this.scene.add(this.lights.point);
     }
-    
+
     getScene() {
         return this.scene;
     }
-    
-    addObject(object) {
-        // TODO: Add object to scene
+
+    addObject(object, isDynamic = true) {
+        this.scene.add(object);
+        if (isDynamic) {
+            this.dynamicObjects.add(object);
+        }
     }
-    
+
     removeObject(object) {
-        // TODO: Remove object from scene
+        this.scene.remove(object);
+        this.dynamicObjects.delete(object);
     }
-    
+
     clear() {
-        // TODO: Clear all objects from scene (except lights)
+        this.dynamicObjects.forEach((obj) => {
+            this.scene.remove(obj);
+            if (obj.dispose) obj.dispose();
+        });
+        this.dynamicObjects.clear();
     }
-    
+
     dispose() {
-        // TODO: Dispose of scene resources
+        this.clear();
+        this.lights = {};
+        this.scene = null;
     }
 }
 
