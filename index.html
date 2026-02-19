@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Snake - Three.js</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <div id="game-container"></div>
+    <div id="ui-container">
+        <div id="hud">
+            <div class="stat">Level: <span id="level">1</span></div>
+            <div class="stat">Score: <span id="score">0</span></div>
+            <div class="stat">Snake Length: <span id="length">1</span></div>
+        </div>
+    </div>
+    
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@r128/build/three.module.js"
+            }
+        }
+    </script>
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>
