@@ -61,9 +61,27 @@ class Game {
         console.log('Canvas created:', this.renderSystem.getCanvas());
         console.log('Size:', this.renderSystem.getSize());
         
+        // Initialize GameScene
+        this.scene = new GameScene();
+        console.log('GameScene initialized');
+        
         // Initialize InputController with canvas
         this.inputController = new InputController(this.renderSystem.getCanvas());
         console.log('InputController initialized');
+        
+        // Create Three.js camera
+        const { width, height } = this.renderSystem.getSize();
+        this.camera = new THREE.PerspectiveCamera(
+            CONFIG.camera.fov,
+            width / height,
+            CONFIG.camera.near,
+            CONFIG.camera.far
+        );
+        console.log('Camera initialized');
+        
+        // Initialize CameraController
+        this.cameraController = new CameraController(this.camera, this.inputController);
+        console.log('CameraController initialized');
     }
     
     start() {
@@ -79,9 +97,24 @@ class Game {
         // Render the scene
         // Continue animation loop
         
+        // Calculate delta time
+        if (this.lastTime === 0) this.lastTime = currentTime;
+        this.deltaTime = (currentTime - this.lastTime) / 1000;
+        this.lastTime = currentTime;
+        
         this.frameCount++;
         
-        // DEBUG: Log input controller state every 30 frames
+        // Update camera controller
+        if (this.cameraController) {
+            this.cameraController.update(this.deltaTime);
+        }
+        
+        // Render the scene
+        if (this.scene && this.camera && this.renderSystem) {
+            this.renderSystem.render(this.scene.getScene(), this.camera);
+        }
+        
+        // DEBUG: Log input controller state every 240 frames (~4 seconds at 60fps)
         if (this.frameCount % 240 === 0 && this.inputController) {
             const rotation = this.inputController.getRotation();
             const pressedKeys = Object.entries(this.inputController.keys)

@@ -7,13 +7,13 @@ import * as THREE from 'three';
 import CONFIG from '../config.js';
 
 class CameraController {
-    constructor(camera, target) {
+    constructor(camera, inputController) {
         this.camera = camera;
-        this.target = target; // The snake's head position
+        this.inputController = inputController;
         
         // Camera state
-        this.position = new THREE.Vector3();
-        this.lookAtPoint = new THREE.Vector3();
+        this.position = new THREE.Vector3(0, 10, 20);
+        this.lookAtPoint = new THREE.Vector3(0, 0, 0);
         this.velocity = new THREE.Vector3();
         
         // Control parameters
@@ -25,30 +25,82 @@ class CameraController {
         // Shake effect
         this.shakeIntensity = 0;
         this.shakeDecay = 0.95;
+        
+        // Current target to follow
+        this.targetPosition = new THREE.Vector3(0, 0, 0);
+        
+        this.updateCamera();
     }
     
     update(deltaTime) {
-        // TODO: Update camera position to follow snake
-        // TODO: Apply lerp smoothing to position
-        // TODO: Update camera target (look-at point)
-        // TODO: Handle camera shake effect
+        // Get rotation from input controller
+        const { yaw, pitch } = this.inputController.getRotation();
+        
+        // Calculate camera position based on yaw and pitch rotation
+        const distance = this.followDistance;
+        const height = this.followHeight;
+        
+        // Convert yaw and pitch to Cartesian coordinates
+        const horizontalDistance = distance * Math.cos(pitch);
+        const verticalOffset = distance * Math.sin(pitch) + height;
+        
+        const desiredX = this.targetPosition.x + horizontalDistance * Math.sin(yaw);
+        const desiredY = this.targetPosition.y + verticalOffset;
+        const desiredZ = this.targetPosition.z + horizontalDistance * Math.cos(yaw);
+        
+        // Lerp camera position for smooth movement
+        this.position.x += (desiredX - this.position.x) * this.lerpFactor;
+        this.position.y += (desiredY - this.position.y) * this.lerpFactor;
+        this.position.z += (desiredZ - this.position.z) * this.lerpFactor;
+        
+        // Look ahead with offset
+        const lookAheadX = this.targetPosition.x + this.lookAheadDistance * Math.sin(yaw);
+        const lookAheadY = this.targetPosition.y;
+        const lookAheadZ = this.targetPosition.z + this.lookAheadDistance * Math.cos(yaw);
+        
+        this.lookAtPoint.set(lookAheadX, lookAheadY, lookAheadZ);
+        
+        // Apply camera shake effect
+        if (this.shakeIntensity > 0.001) {
+            const shakeX = (Math.random() - 0.5) * 2 * this.shakeIntensity;
+            const shakeY = (Math.random() - 0.5) * 2 * this.shakeIntensity;
+            const shakeZ = (Math.random() - 0.5) * 2 * this.shakeIntensity;
+            
+            this.camera.position.set(
+                this.position.x + shakeX,
+                this.position.y + shakeY,
+                this.position.z + shakeZ
+            );
+            
+            this.shakeIntensity *= this.shakeDecay;
+        } else {
+            this.camera.position.copy(this.position);
+        }
+        
+        this.camera.lookAt(this.lookAtPoint);
     }
     
     applyShake(intensity) {
-        // TODO: Apply camera shake effect with given intensity
-        // Used when cube breaks or major events occur
+        this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
     }
     
     setTarget(targetPosition) {
-        // TODO: Set the target position for camera to follow
+        this.targetPosition.copy(targetPosition);
     }
     
     getWorldDirection() {
-        // TODO: Return the direction the camera is looking
+        const direction = new THREE.Vector3();
+        this.camera.getWorldDirection(direction);
+        return direction;
+    }
+    
+    updateCamera() {
+        this.camera.position.copy(this.position);
+        this.camera.lookAt(this.lookAtPoint);
     }
     
     dispose() {
-        // TODO: Clean up camera controller
+        // Camera controller doesn't own any resources that need cleanup
     }
 }
 
