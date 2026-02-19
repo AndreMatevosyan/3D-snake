@@ -12,6 +12,7 @@ import CollisionSystem from './systems/CollisionSystem.js';
 import LevelSystem from './systems/LevelSystem.js';
 import RenderSystem from './systems/RenderSystem.js';
 import Snake from './entities/Snake.js';
+import Cube from './entities/Cube.js';
 
 class Game {
     constructor() {
@@ -83,6 +84,11 @@ class Game {
         // Initialize CameraController
         this.cameraController = new CameraController(this.camera, this.inputController);
         console.log('CameraController initialized');
+
+        // Create cube (container walls) and add to scene
+        this.cube = new Cube();
+        this.cube.initialize();
+        this.scene.addObject(this.cube.getGroup(), false); // false = not dynamic (persists)
 
         // Create snake and add to scene
         this.snake = new Snake(new THREE.Vector3(0, 0, 0));
