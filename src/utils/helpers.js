@@ -62,17 +62,9 @@ export function showOverlay(title, message, buttonText, callback) {
 }
 
 export default {
-    clamp,
-    lerp,
-    lerpVector3,
     randomPointInBounds,
-    distance,
-    createCylinderGeometry,
-    createSphereGeometry,
     createBoxGeometry,
-    normalizeAngle,
-    toRadians,
-    toDegrees,
+    distanceToBoxBounds,
     updateHUD,
     showOverlay,
 };
