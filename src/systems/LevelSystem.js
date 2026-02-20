@@ -12,7 +12,6 @@ class LevelSystem {
     }
     
     initialize(level = 1) {
-        // TODO: Set up initial level settings
         this.currentLevel = level;
         this.applesEaten = 0;
     }
@@ -23,25 +22,18 @@ class LevelSystem {
     }
     
     getAppleRequirement() {
-        // TODO: Return number of apples needed to complete current level
-        // Based on CONFIG.levels.appleRequirement
         return CONFIG.levels.appleRequirement[this.currentLevel] || 20;
     }
     
     getSpeedMultiplier() {
-        // TODO: Return speed multiplier for current level
-        // Based on CONFIG.levels.speedMultiplier
         return CONFIG.levels.speedMultiplier[this.currentLevel] || 1.0;
     }
     
     getRadiusMultiplier() {
-        // TODO: Return radius multiplier based on level
-        // Increases as levels progress
         return 1.0 + (this.currentLevel - 1) * 0.2;
     }
     
     shouldLevelUp(applesEaten) {
-        // TODO: Check if apple requirement is met
         return applesEaten >= this.getAppleRequirement();
     }
     
@@ -53,7 +45,6 @@ class LevelSystem {
     }
     
     getLevelData() {
-        // TODO: Return complete level configuration data
         return {
             level: this.currentLevel,
             appleRequirement: this.getAppleRequirement(),
@@ -64,7 +55,6 @@ class LevelSystem {
     }
     
     reset() {
-        // TODO: Reset level system to level 1
         this.currentLevel = 1;
         this.applesEaten = 0;
     }

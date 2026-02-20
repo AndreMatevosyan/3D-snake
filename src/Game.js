@@ -50,14 +50,6 @@ class Game {
     }
     
     initialize() {
-        // TODO: Initialize all systems
-        // - Create THREE.js scene, camera, renderer
-        // - Initialize GameScene
-        // - Setup CameraController
-        // - Setup InputController
-        // - Initialize game entities (Snake, Apple, Cube)
-        // - Setup systems (CollisionSystem, LevelSystem, RenderSystem)
-        
         const container = document.getElementById('game-container');
         this.renderSystem = new RenderSystem(container);
 
@@ -122,18 +114,11 @@ class Game {
     }
     
     start() {
-        // TODO: Start the game loop and set game state to running
         this.isRunning = true;
         this.requestAnimationFrame = window.requestAnimationFrame(this.gameLoop.bind(this));
     }
     
     gameLoop(currentTime) {
-        // TODO: Calculate delta time and update all systems
-        // Call update methods for all entities and systems
-        // Handle collisions
-        // Render the scene
-        // Continue animation loop
-        
         // Calculate delta time
         if (this.lastTime === 0) this.lastTime = currentTime;
         this.deltaTime = (currentTime - this.lastTime) / 1000;
@@ -154,7 +139,6 @@ class Game {
         // Collision: snake eats apple, or snake hits itself
         if (this.collisionSystem && this.snake) {
             const collision = this.collisionSystem.update(
-                this.deltaTime,
                 this.snake,
                 this.apple,
                 this.cube
@@ -176,7 +160,7 @@ class Game {
                 this.snake.getHeadPosition(),
                 this.snake.getDirection()
             );
-            this.cameraController.update(this.deltaTime);
+            this.cameraController.update();
         }
         
         // Update HUD
@@ -213,19 +197,6 @@ class Game {
         if (this.isRunning) {
             window.requestAnimationFrame(this.gameLoop.bind(this));
         }
-    }
-    
-    update(deltaTime) {
-        // TODO: Update game logic
-        // - Update input
-        // - Update snake
-        // - Update camera
-        // - Check collisions
-        // - Update HUD
-    }
-    
-    render() {
-        // TODO: Render the scene
     }
     
     nextLevel() {
@@ -269,12 +240,10 @@ class Game {
     }
     
     pause() {
-        // TODO: Pause the game
         this.isPaused = true;
     }
     
     resume() {
-        // TODO: Resume the game
         this.isPaused = false;
     }
     
