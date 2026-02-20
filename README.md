@@ -37,21 +37,21 @@ A browser-based 3D arcade game where you control a snake trapped inside a transp
 
 ### Core Gameplay
 - ✅ Base file structure created
-- ⬜ 3D snake movement and rendering
-- ⬜ Mouse-controlled steering (pitch + yaw)
-- ⬜ Continuous forward movement
-- ⬜ Apple spawning and collection
-- ⬜ Snake growth system
+- ✅ 3D snake movement and rendering
+- ✅ Mouse-controlled steering (pitch + yaw)
+- ✅ Continuous forward movement
+- ✅ Apple spawning and collection
+- ✅ Snake growth system
 
 ### Camera System
-- ⬜ Third-person follow camera
-- ⬜ Smooth lerp-based tracking
+- ✅ Third-person follow camera
+- ✅ Smooth lerp-based tracking
 - ⬜ Camera shake effects
 
 ### Collision Detection
-- ⬜ Snake-apple collision
-- ⬜ Snake-self collision
-- ⬜ Snake-wall collision
+- ✅ Snake-apple collision
+- ✅ Snake-self collision
+- ✅ Snake-wall collision
 
 ### Level System
 - ⬜ Progressive difficulty scaling
