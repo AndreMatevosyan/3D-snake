@@ -30,14 +30,24 @@ class CameraController {
         this.targetPosition = new THREE.Vector3(0, 0, 0);
         this.targetDirection = new THREE.Vector3(0, 0, 1);
 
+        // V key: false = behind snake, true = in front facing snake
+        this.frontViewMode = false;
+
         this.updateCamera();
+    }
+
+    setFrontViewMode(enabled) {
+        this.frontViewMode = !!enabled;
+    }
+
+    getFrontViewMode() {
+        return this.frontViewMode;
     }
 
     update() {
         const distance = this.followDistance;
         const height = this.followHeight;
 
-        // Position camera behind the snake head (opposite to snake direction)
         const horizontalDir = new THREE.Vector3(
             this.targetDirection.x,
             0,
@@ -48,17 +58,25 @@ class CameraController {
             horizontalDir.set(0, 0, -1);
         }
 
-        const desiredX = this.targetPosition.x - horizontalDir.x * distance;
-        const desiredY = this.targetPosition.y + height;
-        const desiredZ = this.targetPosition.z - horizontalDir.z * distance;
+        let desiredX, desiredY, desiredZ;
+        if (this.frontViewMode) {
+            // Position camera in front of snake, facing the snake head
+            desiredX = this.targetPosition.x + horizontalDir.x * distance;
+            desiredY = this.targetPosition.y + height;
+            desiredZ = this.targetPosition.z + horizontalDir.z * distance;
+            this.lookAtPoint.copy(this.targetPosition);
+        } else {
+            // Position camera behind the snake head (opposite to snake direction)
+            desiredX = this.targetPosition.x - horizontalDir.x * distance;
+            desiredY = this.targetPosition.y + height;
+            desiredZ = this.targetPosition.z - horizontalDir.z * distance;
+            this.lookAtPoint.copy(this.targetPosition).addScaledVector(this.targetDirection, this.lookAheadDistance);
+        }
 
         // Lerp camera position for smooth movement
         this.position.x += (desiredX - this.position.x) * this.lerpFactor;
         this.position.y += (desiredY - this.position.y) * this.lerpFactor;
         this.position.z += (desiredZ - this.position.z) * this.lerpFactor;
-
-        // Look at snake head, slightly ahead in its direction
-        this.lookAtPoint.copy(this.targetPosition).addScaledVector(this.targetDirection, this.lookAheadDistance);
         
         // Apply camera shake effect
         if (this.shakeIntensity > 0.001) {

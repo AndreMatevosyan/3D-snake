@@ -44,7 +44,7 @@ export const CONFIG = {
 
     // Hawk (flying obstacle)
     hawk: {
-        radius: 1.2,
+        radius: 1.5,
         speed: 8,
         minLevel: 3,
         maxCount: 4,

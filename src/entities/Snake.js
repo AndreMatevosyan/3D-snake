@@ -55,22 +55,61 @@ class Snake {
             metalness: 0.2,
             roughness: 0.6,
         });
+        const tongueMaterial = new THREE.MeshStandardMaterial({
+            color: 0xdd4444,
+            metalness: 0.1,
+            roughness: 0.8,
+        });
+        const eyeMaterial = new THREE.MeshStandardMaterial({
+            color: 0x000000,
+            metalness: 0.2,
+            roughness: 0.4,
+        });
 
         // Create meshes for each segment
         for (let i = 0; i < this.length; i++) {
             const isHead = i === 0;
-            const segmentRadius = isHead ? this.radius * 1.2 : this.radius;
 
-            const geometry = new THREE.SphereGeometry(segmentRadius, 16, 12);
-            const material = isHead ? headMaterial : bodyMaterial;
+            if (isHead) {
+                const headGroup = new THREE.Group();
+                headGroup.position.copy(this.segmentPositions[i]);
 
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            mesh.position.copy(this.segmentPositions[i]);
+                // Head body (elongated sphere - more snake-like)
+                const headGeom = new THREE.SphereGeometry(this.radius * 1.15, 16, 12);
+                const headMesh = new THREE.Mesh(headGeom, headMaterial);
+                headMesh.scale.set(1, 1, 1.15);
+                headMesh.castShadow = true;
+                headMesh.receiveShadow = true;
+                headGroup.add(headMesh);
 
-            this.segments.push(mesh);
-            this.group.add(mesh);
+                // Eyes (2 black spheres, on front -Z)
+                const eyeGeom = new THREE.SphereGeometry(this.radius * 0.28, 10, 8);
+                const leftEye = new THREE.Mesh(eyeGeom, eyeMaterial);
+                leftEye.position.set(-this.radius * 0.45, this.radius * 0.4, -this.radius * 0.95);
+                headGroup.add(leftEye);
+                const rightEye = new THREE.Mesh(eyeGeom.clone(), eyeMaterial);
+                rightEye.position.set(this.radius * 0.45, this.radius * 0.4, -this.radius * 0.95);
+                headGroup.add(rightEye);
+
+                // Tongue (thin cylinder, points -Z / forward)
+                const tongueGeom = new THREE.CylinderGeometry(this.radius * 0.06, this.radius * 0.08, this.radius * 0.8, 6);
+                const tongue = new THREE.Mesh(tongueGeom, tongueMaterial);
+                tongue.rotation.x = Math.PI / 2;
+                tongue.position.z = -this.radius * 1.1;
+                headGroup.add(tongue);
+
+                this.segments.push(headGroup);
+                this.group.add(headGroup);
+            } else {
+                const segmentRadius = this.radius;
+                const geometry = new THREE.SphereGeometry(segmentRadius, 16, 12);
+                const mesh = new THREE.Mesh(geometry, bodyMaterial);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                mesh.position.copy(this.segmentPositions[i]);
+                this.segments.push(mesh);
+                this.group.add(mesh);
+            }
         }
 
         this.head = this.segments[0];
@@ -112,6 +151,17 @@ class Snake {
 
         for (let i = 0; i < this.segments.length; i++) {
             this.segments[i].position.copy(this.segmentPositions[i]);
+        }
+
+        // Rotate head so -Z (eyes, tongue) points in movement direction
+        if (this.head) {
+            const dir = this.direction.clone().normalize();
+            if (dir.lengthSq() > 0.001) {
+                this.head.quaternion.setFromUnitVectors(
+                    new THREE.Vector3(0, 0, -1),
+                    dir
+                );
+            }
         }
     }
 
@@ -167,8 +217,15 @@ class Snake {
 
     dispose() {
         for (const segment of this.segments) {
-            segment.geometry?.dispose();
-            segment.material?.dispose();
+            if (segment.isGroup) {
+                segment.traverse((child) => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) child.material.dispose();
+                });
+            } else {
+                segment.geometry?.dispose();
+                segment.material?.dispose();
+            }
         }
         this.segments = [];
         this.segmentPositions = [];

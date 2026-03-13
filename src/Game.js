@@ -59,6 +59,7 @@ class Game {
         this.pauseOverlay = null;
         this.showingIntro = true;
         this.wallCollisionGraceFrames = 0;
+        this.vKeyWasPressedLastFrame = false;
 
         this.initialize();
     }
@@ -425,7 +426,15 @@ class Game {
             }
         }
 
-        // Update camera to follow snake (behind head)
+        // V key: toggle camera between behind and front of snake
+        if (this.inputController?.isKeyPressed('KeyV') && !this.vKeyWasPressedLastFrame) {
+            this.cameraController?.setFrontViewMode(!this.cameraController.getFrontViewMode());
+            this.vKeyWasPressedLastFrame = true;
+        } else if (!this.inputController?.isKeyPressed('KeyV')) {
+            this.vKeyWasPressedLastFrame = false;
+        }
+
+        // Update camera to follow snake
         if (this.cameraController && this.snake) {
             this.cameraController.setTarget(
                 this.snake.getHeadPosition(),
