@@ -18,6 +18,7 @@ class GameScene {
     initialize() {
         this.scene = new THREE.Scene();
         this.setupBackground();
+        this.setupStars();
         this.setupFog();
         this.setupLighting();
     }
@@ -25,6 +26,45 @@ class GameScene {
     setupBackground() {
         const { backgroundColor } = CONFIG.scene;
         this.scene.background = new THREE.Color(backgroundColor);
+    }
+
+    setupStars() {
+        const count = 5000;
+        const radius = 400;
+        const positions = new Float32Array(count * 3);
+        const colors = new Float32Array(count * 3);
+
+        for (let i = 0; i < count; i++) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+            positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+            positions[i * 3 + 2] = radius * Math.cos(phi);
+
+            const t = Math.random();
+            const r = t < 0.7 ? 1 : t < 0.85 ? 0.9 : 0.95;
+            const g = t < 0.7 ? 1 : t < 0.85 ? 0.95 : 0.9;
+            const b = t < 0.7 ? 1 : t < 0.85 ? 1 : 0.85;
+            colors[i * 3] = r;
+            colors[i * 3 + 1] = g;
+            colors[i * 3 + 2] = b;
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: 1.8,
+            vertexColors: true,
+            sizeAttenuation: true,
+            transparent: true,
+            opacity: 0.9,
+            fog: false,
+        });
+
+        this.starfield = new THREE.Points(geometry, material);
+        this.scene.add(this.starfield);
     }
 
     setupFog() {
@@ -97,6 +137,12 @@ class GameScene {
 
     dispose() {
         this.clear();
+        if (this.starfield) {
+            this.scene.remove(this.starfield);
+            this.starfield.geometry.dispose();
+            this.starfield.material.dispose();
+            this.starfield = null;
+        }
         this.lights = {};
         this.scene = null;
     }
