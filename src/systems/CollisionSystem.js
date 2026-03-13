@@ -11,8 +11,14 @@ class CollisionSystem {
         this.checkInterval = CONFIG.physics.collisionCheckInterval;
     }
 
-    update(snake, apple, cube) {
-        const result = { appleCollision: false, selfCollision: false, wallCollision: false };
+    update(snake, apple, cube, hawks = [], powerup = null) {
+        const result = {
+            appleCollision: false,
+            selfCollision: false,
+            wallCollision: false,
+            hawkCollision: false,
+            powerupCollision: null,
+        };
         if (!snake) return result;
 
         if (apple?.getMesh()) {
@@ -21,6 +27,13 @@ class CollisionSystem {
         result.selfCollision = this.checkSnakeSelfCollision(snake);
         if (cube) {
             result.wallCollision = this.checkSnakeCubeCollision(snake, cube);
+        }
+        if (hawks.length > 0) {
+            result.hawkCollision = this.checkSnakeHawkCollision(snake, hawks);
+        }
+        if (powerup?.getMesh()) {
+            const type = this.checkSnakePowerupCollision(snake, powerup);
+            if (type) result.powerupCollision = type;
         }
         return result;
     }
@@ -68,6 +81,29 @@ class CollisionSystem {
         return false;
     }
     
+    checkSnakeHawkCollision(snake, hawks) {
+        const headPos = snake.getHeadPosition();
+        const headRadius = snake.radius * 1.2;
+
+        for (const hawk of hawks) {
+            const dist = this.calculateDistance(headPos, hawk.getPosition());
+            if (dist < headRadius + hawk.getRadius()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    checkSnakePowerupCollision(snake, powerup) {
+        const headPos = snake.getHeadPosition();
+        const headRadius = snake.radius * 1.2;
+        const dist = this.calculateDistance(headPos, powerup.getPosition());
+        if (dist < headRadius + powerup.getRadius()) {
+            return powerup.type;
+        }
+        return null;
+    }
+
     calculateDistance(point1, point2) {
         return point1.distanceTo(point2);
     }

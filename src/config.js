@@ -42,6 +42,23 @@ export const CONFIG = {
         floatSpeed: 2,
     },
 
+    // Hawk (flying obstacle)
+    hawk: {
+        radius: 1.2,
+        speed: 8,
+        minLevel: 3,
+        maxCount: 4,
+    },
+
+    // Powerups
+    powerup: {
+        radius: 1.0,
+        immunityDuration: 8,
+        slowMultiplier: 0.5,
+        slowDuration: 5,
+        spawnInterval: 12,
+    },
+
     // Cube (Container)
     cube: {
         initialSize: 40,

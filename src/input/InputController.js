@@ -113,7 +113,7 @@ class InputController {
         this.keys[key] = true;
         
         // Prevent default for game keys
-        if (['Space', 'KeyP', 'KeyR', 'Escape'].includes(key)) {
+        if (['Space', 'KeyP', 'KeyR', 'KeyL', 'Escape'].includes(key)) {
             event.preventDefault();
         }
         

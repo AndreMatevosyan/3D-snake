@@ -26,7 +26,7 @@ class RenderSystem {
         this.renderer.setPixelRatio(CONFIG.rendering.pixelRatio);
         this.renderer.setSize(this.width, this.height);
         this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFShadowShadowMap;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
         this.container.appendChild(this.renderer.domElement);
 

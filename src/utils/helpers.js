@@ -28,15 +28,24 @@ export function distanceToBoxBounds(position, min, max) {
 
 // Update UI elements
 
-export function updateHUD(level, score, length, applesEaten, appleRequirement) {
+export function updateHUD(level, score, length, applesEaten, appleRequirement, immunityRemaining = 0, slowCharges = 0, slowActiveRemaining = 0) {
     const levelElement = document.getElementById('hud-level');
     const scoreElement = document.getElementById('score');
     const lengthElement = document.getElementById('length');
     const applesElement = document.getElementById('apples-progress');
+    const immunityElement = document.getElementById('immunity-time');
+    const slowElement = document.getElementById('slow-charges');
+    const immunityStat = document.getElementById('immunity-stat');
+    const slowStat = document.getElementById('slow-stat');
+
     if (levelElement) levelElement.textContent = level;
     if (scoreElement) scoreElement.textContent = score;
     if (lengthElement) lengthElement.textContent = length;
     if (applesElement) applesElement.textContent = `${applesEaten}/${appleRequirement}`;
+    if (immunityElement) immunityElement.textContent = immunityRemaining > 0 ? `${Math.ceil(immunityRemaining)}s` : '--';
+    if (immunityStat) immunityStat.style.display = immunityRemaining > 0 ? '' : 'none';
+    if (slowElement) slowElement.textContent = slowActiveRemaining > 0 ? `${Math.ceil(slowActiveRemaining)}s` : slowCharges;
+    if (slowStat) slowStat.style.display = slowCharges > 0 || slowActiveRemaining > 0 ? '' : 'none';
 }
 
 /**

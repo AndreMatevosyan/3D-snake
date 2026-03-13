@@ -14,6 +14,8 @@ import RenderSystem from './systems/RenderSystem.js';
 import Snake from './entities/Snake.js';
 import Apple from './entities/Apple.js';
 import Cube from './entities/Cube.js';
+import Hawk from './entities/Hawk.js';
+import Powerup, { POWERUP_TYPES } from './entities/Powerup.js';
 import { randomPointInBounds, updateHUD, showOverlay, distanceToBoxBounds } from './utils/helpers.js';
 
 class Game {
@@ -41,6 +43,14 @@ class Game {
         this.apple = null;
         this.cube = null;
         this.shatteringCube = null;
+        this.hawks = [];
+        this.powerup = null;
+
+        // Powerup state
+        this.immunityRemaining = 0;
+        this.slowCharges = 0;
+        this.slowActiveRemaining = 0;
+        this.baseSpeed = CONFIG.snake.initialSpeed;
         
         // Time
         this.lastTime = 0;
@@ -101,6 +111,8 @@ class Game {
         this.apple = new Apple();
         this.apple.initialize();
         this.spawnApple();
+        this.spawnHawks();
+        this.schedulePowerupSpawn();
 
         this.levelSystem.initialize(1);
         this.currentLevel = this.levelSystem.currentLevel;
@@ -121,8 +133,10 @@ class Game {
         const levelData = this.levelSystem.getLevelData();
         if (this.snake) {
             const baseSpeed = CONFIG.snake.initialSpeed * levelData.speedMultiplier;
-            this.snake.setVelocity(baseSpeed);
+            this.baseSpeed = baseSpeed;
+            this.applySpeedModifier();
         }
+        this.spawnHawks();
         if (this.cube) {
             const oldSize = this.cube.size;
             const newSize = levelData.cubeSize;
@@ -213,6 +227,72 @@ class Game {
         this.apple.spawn(position);
         this.scene.addObject(this.apple.getMesh());
     }
+
+    getHawkCount() {
+        const cfg = CONFIG.hawk;
+        if (this.levelSystem.currentLevel < cfg.minLevel) return 0;
+        const extra = this.levelSystem.currentLevel - cfg.minLevel;
+        return Math.min(extra + 1, cfg.maxCount);
+    }
+
+    spawnHawks() {
+        for (const hawk of this.hawks) {
+            this.scene.removeObject(hawk.getGroup());
+            hawk.dispose();
+        }
+        this.hawks = [];
+
+        const count = this.getHawkCount();
+        if (count === 0 || !this.cube) return;
+
+        const { min, max } = this.cube.getBounds();
+        const margin = 5;
+        const spawnMin = min.clone().addScalar(margin);
+        const spawnMax = max.clone().subScalar(margin);
+        const bounds = { min: spawnMin, max: spawnMax };
+
+        for (let i = 0; i < count; i++) {
+            const position = randomPointInBounds(spawnMin, spawnMax);
+            const hawk = new Hawk(position, bounds);
+            this.hawks.push(hawk);
+            this.scene.addObject(hawk.getGroup());
+        }
+    }
+
+    schedulePowerupSpawn() {
+        this.powerupSpawnTimer = CONFIG.powerup.spawnInterval * 0.5;
+    }
+
+    trySpawnPowerup(deltaTime) {
+        if (this.powerup) return;
+        this.powerupSpawnTimer -= deltaTime;
+        if (this.powerupSpawnTimer > 0) return;
+
+        const { min, max } = this.cube.getBounds();
+        const margin = 4;
+        const spawnMin = min.clone().addScalar(margin);
+        const spawnMax = max.clone().subScalar(margin);
+        const position = randomPointInBounds(spawnMin, spawnMax);
+
+        const type = Math.random() < 0.5 ? POWERUP_TYPES.IMMUNITY : POWERUP_TYPES.SLOW;
+        this.powerup = new Powerup(type, position);
+        this.scene.addObject(this.powerup.getMesh());
+        this.schedulePowerupSpawn();
+    }
+
+    removePowerup() {
+        if (this.powerup) {
+            this.scene.removeObject(this.powerup.getMesh());
+            this.powerup.dispose();
+            this.powerup = null;
+        }
+    }
+
+    applySpeedModifier() {
+        if (!this.snake) return;
+        const mult = this.slowActiveRemaining > 0 ? CONFIG.powerup.slowMultiplier : 1;
+        this.snake.setVelocity(this.baseSpeed * mult);
+    }
     
     start() {
         this.isRunning = true;
@@ -256,6 +336,26 @@ class Game {
             this._rHeld = false;
         }
 
+        // L key: activate slow powerup
+        if (this.inputController?.isKeyPressed('KeyL') && !this._lHeld && this.slowCharges > 0 && this.slowActiveRemaining <= 0) {
+            this._lHeld = true;
+            this.slowCharges--;
+            this.slowActiveRemaining = CONFIG.powerup.slowDuration;
+            this.applySpeedModifier();
+        }
+        if (!this.inputController?.isKeyPressed('KeyL')) {
+            this._lHeld = false;
+        }
+
+        // Tick powerup timers
+        if (this.immunityRemaining > 0) {
+            this.immunityRemaining -= this.deltaTime;
+        }
+        if (this.slowActiveRemaining > 0) {
+            this.slowActiveRemaining -= this.deltaTime;
+            if (this.slowActiveRemaining <= 0) this.applySpeedModifier();
+        }
+
         // Update snake
         if (this.snake && this.inputController) {
             this.snake.update(this.deltaTime, this.inputController.getRotation());
@@ -266,18 +366,40 @@ class Game {
             this.apple.update(this.deltaTime);
         }
 
+        // Update hawks
+        const bounds = this.cube?.getBounds();
+        if (bounds) {
+            for (const hawk of this.hawks) {
+                hawk.update(this.deltaTime);
+            }
+        }
+
+        // Update powerup and try spawn
+        if (this.powerup) this.powerup.update(this.deltaTime);
+        this.trySpawnPowerup(this.deltaTime);
+
         // Tick the shattering cube animation
         if (this.shatteringCube) {
             this.shatteringCube.update(this.deltaTime);
         }
 
-        // Collision: snake eats apple, or snake hits itself
+        // Collision: snake eats apple, powerup, or hits hawk/self/wall
         if (this.collisionSystem && this.snake) {
             const collision = this.collisionSystem.update(
                 this.snake,
                 this.apple,
-                this.cube
+                this.cube,
+                this.hawks,
+                this.powerup
             );
+            if (collision.powerupCollision) {
+                if (collision.powerupCollision === POWERUP_TYPES.IMMUNITY) {
+                    this.immunityRemaining = CONFIG.powerup.immunityDuration;
+                } else if (collision.powerupCollision === POWERUP_TYPES.SLOW) {
+                    this.slowCharges++;
+                }
+                this.removePowerup();
+            }
             if (collision.appleCollision) {
                 this.snake.addSegment();
                 this.score++;
@@ -296,8 +418,9 @@ class Game {
                 this.wallCollisionGraceFrames--;
             }
             const wallDeath = collision.wallCollision && this.wallCollisionGraceFrames <= 0;
-            if (collision.selfCollision || wallDeath) {
-                this.gameOver();
+            const hawkDeath = collision.hawkCollision && this.immunityRemaining <= 0;
+            if (collision.selfCollision || wallDeath || hawkDeath) {
+                this.gameOver(hawkDeath ? 3 : undefined);
                 return;
             }
         }
@@ -326,7 +449,10 @@ class Game {
             this.score,
             this.snake?.length ?? 0,
             this.levelSystem.applesEaten,
-            this.levelSystem.getAppleRequirement()
+            this.levelSystem.getAppleRequirement(),
+            this.immunityRemaining,
+            this.slowCharges,
+            this.slowActiveRemaining
         );
 
         // Update wall distance dial
@@ -362,28 +488,44 @@ class Game {
         }
     }
     
-    gameOver() {
+    gameOver(restartLevel = undefined) {
         this.isRunning = false;
         document.exitPointerLock?.();
         const message = `Score: ${this.score}`;
-        showOverlay('Game Over', message, 'Restart', () => this.restart());
+        showOverlay('Game Over', message, 'Restart', () => this.restart(restartLevel));
     }
 
-    restart() {
+    restart(startLevel = 1) {
+        this.isPaused = false;
+        if (this.pauseOverlay?.parentNode) {
+            this.pauseOverlay.remove();
+        }
+        this.pauseOverlay = null;
+        document.body.classList.remove('paused', 'game-over', 'intro');
+
         if (this.shatteringCube) {
             this.scene.getScene().remove(this.shatteringCube.getGroup());
             this.shatteringCube.dispose();
             this.shatteringCube = null;
         }
+        for (const hawk of this.hawks) {
+            this.scene.removeObject(hawk.getGroup());
+            hawk.dispose();
+        }
+        this.hawks = [];
+        this.removePowerup();
         this.scene.clear();
 
         this.score = 0;
         this.lastTime = 0;
         this.frameCount = 0;
         this.wallCollisionGraceFrames = 0;
+        this.immunityRemaining = 0;
+        this.slowCharges = 0;
+        this.slowActiveRemaining = 0;
         this.levelSystem.reset();
-        this.levelSystem.initialize(1);
-        this.currentLevel = 1;
+        this.levelSystem.initialize(startLevel);
+        this.currentLevel = startLevel;
 
         this.snake = new Snake(new THREE.Vector3(0, 0, 0));
         this.snake.initialize();
@@ -392,6 +534,8 @@ class Game {
 
         this.apple.initialize();
         this.spawnApple();
+        this.spawnHawks();
+        this.schedulePowerupSpawn();
 
         this.cameraController.setTarget(
             this.snake.getHeadPosition(),
@@ -403,12 +547,16 @@ class Game {
             this.score,
             this.snake.length,
             this.levelSystem.applesEaten,
-            this.levelSystem.getAppleRequirement()
+            this.levelSystem.getAppleRequirement(),
+            this.immunityRemaining,
+            this.slowCharges,
+            this.slowActiveRemaining
         );
         this.isRunning = true;
+        this.inputController?.requestPointerLock();
         window.requestAnimationFrame(this.gameLoop.bind(this));
     }
-    
+
     pause() {
         this.isPaused = true;
         document.exitPointerLock?.();
