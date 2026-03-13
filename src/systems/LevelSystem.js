@@ -50,7 +50,7 @@ class LevelSystem {
             appleRequirement: this.getAppleRequirement(),
             speedMultiplier: this.getSpeedMultiplier(),
             radiusMultiplier: this.getRadiusMultiplier(),
-            cubeSize: CONFIG.cube.initialSize - (this.currentLevel - 1) * CONFIG.cube.sizeDecrement,
+            cubeSize: CONFIG.cube.initialSize + (this.currentLevel - 1) * CONFIG.cube.sizeDecrement,
         };
     }
     

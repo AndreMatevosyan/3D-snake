@@ -54,9 +54,9 @@ A browser-based 3D arcade game where you control a snake trapped inside a transp
 - ✅ Snake-wall collision
 
 ### Level System
-- ⬜ Progressive difficulty scaling
+- ✅ Progressive difficulty scaling
 - ⬜ Cube breaking effects
-- ⬜ Speed and size progression
+- ✅ Speed and size progression
 
 ## Technologies Used
 

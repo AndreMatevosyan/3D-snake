@@ -40,6 +40,7 @@ class Game {
         this.snake = null;
         this.apple = null;
         this.cube = null;
+        this.shatteringCube = null;
         
         // Time
         this.lastTime = 0;
@@ -104,14 +105,36 @@ class Game {
         this.applyLevelSettings();
     }
 
-    applyLevelSettings() {
+    applyLevelSettings({ animate = false } = {}) {
         const levelData = this.levelSystem.getLevelData();
         if (this.snake) {
             const baseSpeed = CONFIG.snake.initialSpeed * levelData.speedMultiplier;
             this.snake.setVelocity(baseSpeed);
         }
         if (this.cube) {
-            this.cube.resize(levelData.cubeSize);
+            const oldSize = this.cube.size;
+            const newSize = levelData.cubeSize;
+
+            if (animate && newSize !== oldSize) {
+                // Build the new larger cube behind the old one
+                const newCube = new Cube(newSize);
+                newCube.initialize();
+                this.scene.addObject(newCube.getGroup(), false);
+
+                // Shatter the old cube; once done, remove its group from the scene
+                const oldCube = this.cube;
+                this.shatteringCube = oldCube;
+                oldCube.shatter(() => {
+                    this.scene.getScene().remove(oldCube.getGroup());
+                    oldCube.dispose();
+                    this.shatteringCube = null;
+                });
+
+                // Immediately swap the active cube so bounds use the new size
+                this.cube = newCube;
+            } else {
+                this.cube.resize(newSize);
+            }
         }
     }
 
@@ -153,8 +176,8 @@ class Game {
                 this.levelSystem.nextLevel();
                 this.currentLevel = this.levelSystem.currentLevel;
                 console.log(`LEVEL UP: ${prevLevel} → ${this.currentLevel} | Speed multiplier: ${this.levelSystem.getSpeedMultiplier()}`);
-                this.applyLevelSettings();
-                this.wallCollisionGraceFrames = 30;
+                this.applyLevelSettings({ animate: true });
+                this.wallCollisionGraceFrames = 60;
             }
         }
         if (!this.inputController?.isKeyPressed('KeyR')) {
@@ -169,6 +192,11 @@ class Game {
         // Update apple
         if (this.apple) {
             this.apple.update(this.deltaTime);
+        }
+
+        // Tick the shattering cube animation
+        if (this.shatteringCube) {
+            this.shatteringCube.update(this.deltaTime);
         }
 
         // Collision: snake eats apple, or snake hits itself
@@ -187,8 +215,8 @@ class Game {
                     this.levelSystem.nextLevel();
                     this.currentLevel = this.levelSystem.currentLevel;
                     console.log(`LEVEL UP: ${prevLevel} → ${this.currentLevel} | Speed multiplier: ${this.levelSystem.getSpeedMultiplier()}`);
-                    this.applyLevelSettings();
-                    this.wallCollisionGraceFrames = 30;
+                    this.applyLevelSettings({ animate: true });
+                    this.wallCollisionGraceFrames = 60;
                 }
                 this.spawnApple();
             }
@@ -262,6 +290,11 @@ class Game {
     }
 
     restart() {
+        if (this.shatteringCube) {
+            this.scene.getScene().remove(this.shatteringCube.getGroup());
+            this.shatteringCube.dispose();
+            this.shatteringCube = null;
+        }
         this.scene.clear();
 
         this.score = 0;

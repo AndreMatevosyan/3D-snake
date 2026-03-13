@@ -44,7 +44,7 @@ export const CONFIG = {
 
     // Cube (Container)
     cube: {
-        initialSize: 60,
+        initialSize: 40,
         minSize: 30,
         sizeDecrement: 5,
         wallThickness: 0.5,
