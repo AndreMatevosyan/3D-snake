@@ -33,7 +33,7 @@ class Game {
         this.cameraController = null;
         this.inputController = null;
         this.collisionSystem = new CollisionSystem();
-        this.levelSystem = null;
+        this.levelSystem = new LevelSystem();
         this.renderSystem = null;
         
         // Game entities
@@ -45,6 +45,7 @@ class Game {
         this.lastTime = 0;
         this.deltaTime = 0;
         this.frameCount = 0;
+        this.wallCollisionGraceFrames = 0;
         
         this.initialize();
     }
@@ -97,6 +98,21 @@ class Game {
         this.apple = new Apple();
         this.apple.initialize();
         this.spawnApple();
+
+        this.levelSystem.initialize(1);
+        this.currentLevel = this.levelSystem.currentLevel;
+        this.applyLevelSettings();
+    }
+
+    applyLevelSettings() {
+        const levelData = this.levelSystem.getLevelData();
+        if (this.snake) {
+            const baseSpeed = CONFIG.snake.initialSpeed * levelData.speedMultiplier;
+            this.snake.setVelocity(baseSpeed);
+        }
+        if (this.cube) {
+            this.cube.resize(levelData.cubeSize);
+        }
     }
 
     spawnApple() {
@@ -126,6 +142,25 @@ class Game {
         
         this.frameCount++;
         
+        // DEBUG: R key adds a segment (simulates eating an apple)
+        if (this.inputController?.isKeyPressed('KeyR') && !this._rHeld) {
+            this._rHeld = true;
+            this.snake.addSegment();
+            this.score++;
+            this.levelSystem.recordAppleEaten();
+            if (this.levelSystem.shouldLevelUp()) {
+                const prevLevel = this.levelSystem.currentLevel;
+                this.levelSystem.nextLevel();
+                this.currentLevel = this.levelSystem.currentLevel;
+                console.log(`LEVEL UP: ${prevLevel} → ${this.currentLevel} | Speed multiplier: ${this.levelSystem.getSpeedMultiplier()}`);
+                this.applyLevelSettings();
+                this.wallCollisionGraceFrames = 30;
+            }
+        }
+        if (!this.inputController?.isKeyPressed('KeyR')) {
+            this._rHeld = false;
+        }
+
         // Update snake
         if (this.snake && this.inputController) {
             this.snake.update(this.deltaTime, this.inputController.getRotation());
@@ -146,9 +181,22 @@ class Game {
             if (collision.appleCollision) {
                 this.snake.addSegment();
                 this.score++;
+                this.levelSystem.recordAppleEaten();
+                if (this.levelSystem.shouldLevelUp()) {
+                    const prevLevel = this.levelSystem.currentLevel;
+                    this.levelSystem.nextLevel();
+                    this.currentLevel = this.levelSystem.currentLevel;
+                    console.log(`LEVEL UP: ${prevLevel} → ${this.currentLevel} | Speed multiplier: ${this.levelSystem.getSpeedMultiplier()}`);
+                    this.applyLevelSettings();
+                    this.wallCollisionGraceFrames = 30;
+                }
                 this.spawnApple();
             }
-            if (collision.selfCollision || collision.wallCollision) {
+            if (this.wallCollisionGraceFrames > 0) {
+                this.wallCollisionGraceFrames--;
+            }
+            const wallDeath = collision.wallCollision && this.wallCollisionGraceFrames <= 0;
+            if (collision.selfCollision || wallDeath) {
                 this.gameOver();
                 return;
             }
@@ -162,9 +210,16 @@ class Game {
             );
             this.cameraController.update();
         }
-        
-        // Update HUD
-        updateHUD(this.currentLevel, this.score, this.snake?.length ?? 0);
+
+        // Keep HUD in sync with level system and update display
+        this.currentLevel = this.levelSystem.currentLevel;
+        updateHUD(
+            this.currentLevel,
+            this.score,
+            this.snake?.length ?? 0,
+            this.levelSystem.applesEaten,
+            this.levelSystem.getAppleRequirement()
+        );
 
         // Update wall distance dial
         if (this.snake && this.cube) {
@@ -199,14 +254,6 @@ class Game {
         }
     }
     
-    nextLevel() {
-        // TODO: Transition to next level
-        // - Increment level
-        // - Update level settings
-        // - Reset entities
-        // - Show level complete screen
-    }
-    
     gameOver() {
         this.isRunning = false;
         document.exitPointerLock?.();
@@ -218,13 +265,17 @@ class Game {
         this.scene.clear();
 
         this.score = 0;
-        this.currentLevel = 1;
         this.lastTime = 0;
         this.frameCount = 0;
+        this.wallCollisionGraceFrames = 0;
+        this.levelSystem.reset();
+        this.levelSystem.initialize(1);
+        this.currentLevel = 1;
 
         this.snake = new Snake(new THREE.Vector3(0, 0, 0));
         this.snake.initialize();
         this.scene.addObject(this.snake.getGroup());
+        this.applyLevelSettings();
 
         this.apple.initialize();
         this.spawnApple();
@@ -234,7 +285,13 @@ class Game {
             this.snake.getDirection()
         );
 
-        updateHUD(this.currentLevel, this.score, this.snake.length);
+        updateHUD(
+            this.currentLevel,
+            this.score,
+            this.snake.length,
+            this.levelSystem.applesEaten,
+            this.levelSystem.getAppleRequirement()
+        );
         this.isRunning = true;
         window.requestAnimationFrame(this.gameLoop.bind(this));
     }

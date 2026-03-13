@@ -28,14 +28,15 @@ export function distanceToBoxBounds(position, min, max) {
 
 // Update UI elements
 
-export function updateHUD(level, score, length) {
-    const levelElement = document.getElementById('level');
+export function updateHUD(level, score, length, applesEaten, appleRequirement) {
+    const levelElement = document.getElementById('hud-level');
     const scoreElement = document.getElementById('score');
     const lengthElement = document.getElementById('length');
-    
+    const applesElement = document.getElementById('apples-progress');
     if (levelElement) levelElement.textContent = level;
     if (scoreElement) scoreElement.textContent = score;
     if (lengthElement) lengthElement.textContent = length;
+    if (applesElement) applesElement.textContent = `${applesEaten}/${appleRequirement}`;
 }
 
 // Show overlay screen (game over, level complete, etc.)

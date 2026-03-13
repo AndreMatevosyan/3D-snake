@@ -16,32 +16,32 @@ class LevelSystem {
         this.applesEaten = 0;
     }
     
-    update() {
-        // TODO: Check if level should progress
-        // Called when checking if apple requirement is met
+    recordAppleEaten() {
+        this.applesEaten++;
     }
-    
+
     getAppleRequirement() {
-        return CONFIG.levels.appleRequirement[this.currentLevel] || 20;
+        const req = CONFIG.levels.appleRequirement[this.currentLevel - 1];
+        return req !== undefined ? req : 20;
     }
-    
+
     getSpeedMultiplier() {
-        return CONFIG.levels.speedMultiplier[this.currentLevel] || 1.0;
+        const mult = CONFIG.levels.speedMultiplier[this.currentLevel - 1];
+        return mult !== undefined ? mult : 1.0;
     }
     
     getRadiusMultiplier() {
         return 1.0 + (this.currentLevel - 1) * 0.2;
     }
     
-    shouldLevelUp(applesEaten) {
-        return applesEaten >= this.getAppleRequirement();
+    shouldLevelUp() {
+        return this.applesEaten >= this.getAppleRequirement();
     }
-    
+
     nextLevel() {
-        // TODO: Advance to next level
-        // - Increment level
-        // - Reset apple counter
-        // - Return new level data
+        this.currentLevel++;
+        this.applesEaten = 0;
+        return this.getLevelData();
     }
     
     getLevelData() {
