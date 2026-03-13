@@ -140,7 +140,7 @@ body {
     margin-bottom: 0;
 }
 
-#level, #score, #length {
+#hud-level, #score, #apples-progress, #length {
     color: #00ff00;
 }
 

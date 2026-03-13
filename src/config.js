@@ -44,7 +44,7 @@ export const CONFIG = {
 
     // Cube (Container)
     cube: {
-        initialSize: 60,
+        initialSize: 40,
         minSize: 30,
         sizeDecrement: 5,
         wallThickness: 0.5,
@@ -52,22 +52,10 @@ export const CONFIG = {
         breakingEffect: 'shatter', // 'shatter' or 'dissolve'
     },
 
-    // Levels
+    // Levels (index 0 = level 1, so level N uses index N - 1)
     levels: {
-        appleRequirement: {
-            1: 5,
-            2: 8,
-            3: 12,
-            4: 16,
-            5: 20,
-        },
-        speedMultiplier: {
-            1: 1.0,
-            2: 1.15,
-            3: 1.3,
-            4: 1.5,
-            5: 1.7,
-        },
+        appleRequirement: [5, 8, 12, 16, 20],
+        speedMultiplier: [1.0, 1.15, 1.3, 1.5, 1.7],
     },
 
     // Input

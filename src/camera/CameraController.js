@@ -33,7 +33,7 @@ class CameraController {
         this.updateCamera();
     }
 
-    update(deltaTime) {
+    update() {
         const distance = this.followDistance;
         const height = this.followHeight;
 
@@ -100,10 +100,6 @@ class CameraController {
     updateCamera() {
         this.camera.position.copy(this.position);
         this.camera.lookAt(this.lookAtPoint);
-    }
-    
-    dispose() {
-        // Camera controller doesn't own any resources that need cleanup
     }
 }
 

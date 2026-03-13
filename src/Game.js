@@ -33,13 +33,14 @@ class Game {
         this.cameraController = null;
         this.inputController = null;
         this.collisionSystem = new CollisionSystem();
-        this.levelSystem = null;
+        this.levelSystem = new LevelSystem();
         this.renderSystem = null;
         
         // Game entities
         this.snake = null;
         this.apple = null;
         this.cube = null;
+        this.shatteringCube = null;
         
         // Time
         this.lastTime = 0;
@@ -47,19 +48,12 @@ class Game {
         this.frameCount = 0;
         this.pauseOverlay = null;
         this.showingIntro = true;
+        this.wallCollisionGraceFrames = 0;
 
         this.initialize();
     }
     
     initialize() {
-        // TODO: Initialize all systems
-        // - Create THREE.js scene, camera, renderer
-        // - Initialize GameScene
-        // - Setup CameraController
-        // - Setup InputController
-        // - Initialize game entities (Snake, Apple, Cube)
-        // - Setup systems (CollisionSystem, LevelSystem, RenderSystem)
-        
         const container = document.getElementById('game-container');
         this.renderSystem = new RenderSystem(container);
 
@@ -108,6 +102,10 @@ class Game {
         this.apple.initialize();
         this.spawnApple();
 
+        this.levelSystem.initialize(1);
+        this.currentLevel = this.levelSystem.currentLevel;
+        this.applyLevelSettings();
+
         this._boundKeyDown = this.onPauseKeyDown.bind(this);
         document.addEventListener('keydown', this._boundKeyDown);
 
@@ -117,6 +115,39 @@ class Game {
         }
 
         this.showIntroScreen();
+    }
+
+    applyLevelSettings({ animate = false } = {}) {
+        const levelData = this.levelSystem.getLevelData();
+        if (this.snake) {
+            const baseSpeed = CONFIG.snake.initialSpeed * levelData.speedMultiplier;
+            this.snake.setVelocity(baseSpeed);
+        }
+        if (this.cube) {
+            const oldSize = this.cube.size;
+            const newSize = levelData.cubeSize;
+
+            if (animate && newSize !== oldSize) {
+                // Build the new larger cube behind the old one
+                const newCube = new Cube(newSize);
+                newCube.initialize();
+                this.scene.addObject(newCube.getGroup(), false);
+
+                // Shatter the old cube; once done, remove its group from the scene
+                const oldCube = this.cube;
+                this.shatteringCube = oldCube;
+                oldCube.shatter(() => {
+                    this.scene.getScene().remove(oldCube.getGroup());
+                    oldCube.dispose();
+                    this.shatteringCube = null;
+                });
+
+                // Immediately swap the active cube so bounds use the new size
+                this.cube = newCube;
+            } else {
+                this.cube.resize(newSize);
+            }
+        }
     }
 
     showIntroScreen() {
@@ -184,18 +215,11 @@ class Game {
     }
     
     start() {
-        // TODO: Start the game loop and set game state to running
         this.isRunning = true;
         this.requestAnimationFrame = window.requestAnimationFrame(this.gameLoop.bind(this));
     }
     
     gameLoop(currentTime) {
-        // TODO: Calculate delta time and update all systems
-        // Call update methods for all entities and systems
-        // Handle collisions
-        // Render the scene
-        // Continue animation loop
-        
         // Calculate delta time
         if (this.lastTime === 0) this.lastTime = currentTime;
         this.deltaTime = (currentTime - this.lastTime) / 1000;
@@ -213,6 +237,25 @@ class Game {
             return;
         }
         
+        // DEBUG: R key adds a segment (simulates eating an apple)
+        if (this.inputController?.isKeyPressed('KeyR') && !this._rHeld) {
+            this._rHeld = true;
+            this.snake.addSegment();
+            this.score++;
+            this.levelSystem.recordAppleEaten();
+            if (this.levelSystem.shouldLevelUp()) {
+                const prevLevel = this.levelSystem.currentLevel;
+                this.levelSystem.nextLevel();
+                this.currentLevel = this.levelSystem.currentLevel;
+                console.log(`LEVEL UP: ${prevLevel} → ${this.currentLevel} | Speed multiplier: ${this.levelSystem.getSpeedMultiplier()}`);
+                this.applyLevelSettings({ animate: true });
+                this.wallCollisionGraceFrames = 60;
+            }
+        }
+        if (!this.inputController?.isKeyPressed('KeyR')) {
+            this._rHeld = false;
+        }
+
         // Update snake
         if (this.snake && this.inputController) {
             this.snake.update(this.deltaTime, this.inputController.getRotation());
@@ -223,10 +266,14 @@ class Game {
             this.apple.update(this.deltaTime);
         }
 
+        // Tick the shattering cube animation
+        if (this.shatteringCube) {
+            this.shatteringCube.update(this.deltaTime);
+        }
+
         // Collision: snake eats apple, or snake hits itself
         if (this.collisionSystem && this.snake) {
             const collision = this.collisionSystem.update(
-                this.deltaTime,
                 this.snake,
                 this.apple,
                 this.cube
@@ -234,9 +281,22 @@ class Game {
             if (collision.appleCollision) {
                 this.snake.addSegment();
                 this.score++;
+                this.levelSystem.recordAppleEaten();
+                if (this.levelSystem.shouldLevelUp()) {
+                    const prevLevel = this.levelSystem.currentLevel;
+                    this.levelSystem.nextLevel();
+                    this.currentLevel = this.levelSystem.currentLevel;
+                    console.log(`LEVEL UP: ${prevLevel} → ${this.currentLevel} | Speed multiplier: ${this.levelSystem.getSpeedMultiplier()}`);
+                    this.applyLevelSettings({ animate: true });
+                    this.wallCollisionGraceFrames = 60;
+                }
                 this.spawnApple();
             }
-            if (collision.selfCollision || collision.wallCollision) {
+            if (this.wallCollisionGraceFrames > 0) {
+                this.wallCollisionGraceFrames--;
+            }
+            const wallDeath = collision.wallCollision && this.wallCollisionGraceFrames <= 0;
+            if (collision.selfCollision || wallDeath) {
                 this.gameOver();
                 return;
             }
@@ -248,11 +308,26 @@ class Game {
                 this.snake.getHeadPosition(),
                 this.snake.getDirection()
             );
-            this.cameraController.update(this.deltaTime);
+            this.cameraController.update();
         }
-        
-        // Update HUD
-        updateHUD(this.currentLevel, this.score, this.snake?.length ?? 0);
+
+        // Fade walls between camera and snake head so they don't block the view
+        if (this.cube && this.camera && this.snake) {
+            this.cube.updateWallTransparency(
+                this.camera.position,
+                this.snake.getHeadPosition()
+            );
+        }
+
+        // Keep HUD in sync with level system and update display
+        this.currentLevel = this.levelSystem.currentLevel;
+        updateHUD(
+            this.currentLevel,
+            this.score,
+            this.snake?.length ?? 0,
+            this.levelSystem.applesEaten,
+            this.levelSystem.getAppleRequirement()
+        );
 
         // Update wall distance dial
         if (this.snake && this.cube) {
@@ -287,27 +362,6 @@ class Game {
         }
     }
     
-    update(deltaTime) {
-        // TODO: Update game logic
-        // - Update input
-        // - Update snake
-        // - Update camera
-        // - Check collisions
-        // - Update HUD
-    }
-    
-    render() {
-        // TODO: Render the scene
-    }
-    
-    nextLevel() {
-        // TODO: Transition to next level
-        // - Increment level
-        // - Update level settings
-        // - Reset entities
-        // - Show level complete screen
-    }
-    
     gameOver() {
         this.isRunning = false;
         document.exitPointerLock?.();
@@ -316,16 +370,25 @@ class Game {
     }
 
     restart() {
+        if (this.shatteringCube) {
+            this.scene.getScene().remove(this.shatteringCube.getGroup());
+            this.shatteringCube.dispose();
+            this.shatteringCube = null;
+        }
         this.scene.clear();
 
         this.score = 0;
-        this.currentLevel = 1;
         this.lastTime = 0;
         this.frameCount = 0;
+        this.wallCollisionGraceFrames = 0;
+        this.levelSystem.reset();
+        this.levelSystem.initialize(1);
+        this.currentLevel = 1;
 
         this.snake = new Snake(new THREE.Vector3(0, 0, 0));
         this.snake.initialize();
         this.scene.addObject(this.snake.getGroup());
+        this.applyLevelSettings();
 
         this.apple.initialize();
         this.spawnApple();
@@ -335,7 +398,13 @@ class Game {
             this.snake.getDirection()
         );
 
-        updateHUD(this.currentLevel, this.score, this.snake.length);
+        updateHUD(
+            this.currentLevel,
+            this.score,
+            this.snake.length,
+            this.levelSystem.applesEaten,
+            this.levelSystem.getAppleRequirement()
+        );
         this.isRunning = true;
         window.requestAnimationFrame(this.gameLoop.bind(this));
     }

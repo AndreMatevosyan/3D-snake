@@ -11,7 +11,7 @@ class CollisionSystem {
         this.checkInterval = CONFIG.physics.collisionCheckInterval;
     }
 
-    update(deltaTime, snake, apple, cube) {
+    update(snake, apple, cube) {
         const result = { appleCollision: false, selfCollision: false, wallCollision: false };
         if (!snake) return result;
 
@@ -70,16 +70,6 @@ class CollisionSystem {
     
     calculateDistance(point1, point2) {
         return point1.distanceTo(point2);
-    }
-    
-    handleSelfCollision() {
-        // TODO: Called when snake hits itself
-        // - Trigger game over
-    }
-    
-    handleWallCollision(snake, cube) {
-        // TODO: Called when snake hits cube wall
-        // - Either bounce back or confine snake
     }
 }
 
