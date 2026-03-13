@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import CONFIG from '../config.js';
+import { createSnakeTexture } from '../utils/Textures.js';
 
 class Snake {
     constructor(startPosition = new THREE.Vector3(0, 0, 0)) {
@@ -27,6 +28,9 @@ class Snake {
         
         // Head reference
         this.head = null;
+
+        // Shared texture for segments (created in initialize)
+        this.snakeTexture = null;
     }
     
     initialize() {
@@ -38,17 +42,27 @@ class Snake {
             this.segmentPositions.push(this.position.clone().add(offset));
         }
 
+        this.snakeTexture = createSnakeTexture();
+        const headMaterial = new THREE.MeshStandardMaterial({
+            map: this.snakeTexture,
+            color: 0x44dd44,
+            metalness: 0.2,
+            roughness: 0.6,
+        });
+        const bodyMaterial = new THREE.MeshStandardMaterial({
+            map: this.snakeTexture,
+            color: 0x22aa22,
+            metalness: 0.2,
+            roughness: 0.6,
+        });
+
         // Create meshes for each segment
         for (let i = 0; i < this.length; i++) {
             const isHead = i === 0;
             const segmentRadius = isHead ? this.radius * 1.2 : this.radius;
 
             const geometry = new THREE.SphereGeometry(segmentRadius, 16, 12);
-            const material = new THREE.MeshStandardMaterial({
-                color: isHead ? 0x44dd44 : 0x22aa22,
-                metalness: 0.2,
-                roughness: 0.6,
-            });
+            const material = isHead ? headMaterial : bodyMaterial;
 
             const mesh = new THREE.Mesh(geometry, material);
             mesh.castShadow = true;
@@ -112,6 +126,7 @@ class Snake {
 
         const geometry = new THREE.SphereGeometry(this.radius, 16, 12);
         const material = new THREE.MeshStandardMaterial({
+            map: this.snakeTexture,
             color: 0x22aa22,
             metalness: 0.2,
             roughness: 0.6,

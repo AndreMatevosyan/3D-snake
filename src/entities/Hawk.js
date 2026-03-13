@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import CONFIG from '../config.js';
+import { createHawkTexture } from '../utils/Textures.js';
 
 class Hawk {
     constructor(position, bounds) {
@@ -29,6 +30,7 @@ class Hawk {
     createMesh() {
         const geometry = new THREE.ConeGeometry(this.radius * 1.2, this.radius * 2.5, 8);
         const material = new THREE.MeshStandardMaterial({
+            map: createHawkTexture(),
             color: 0xc4a574,
             metalness: 0.3,
             roughness: 0.6,

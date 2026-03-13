@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import CONFIG from '../config.js';
+import { createPowerupTexture } from '../utils/Textures.js';
 
 export const POWERUP_TYPES = {
     IMMUNITY: 'immunity',
@@ -29,6 +30,7 @@ class Powerup {
 
         const color = this.type === POWERUP_TYPES.IMMUNITY ? 0xffdd00 : 0x4488ff;
         const material = new THREE.MeshStandardMaterial({
+            map: createPowerupTexture(this.type),
             color,
             metalness: 0.4,
             roughness: 0.3,

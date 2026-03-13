@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import CONFIG from '../config.js';
+import { createAppleTexture } from '../utils/Textures.js';
 
 class Apple {
     constructor(position = new THREE.Vector3(0, 0, 0)) {
@@ -25,6 +26,7 @@ class Apple {
         const geometry = new THREE.SphereGeometry(radius, 24, 18);
 
         const material = new THREE.MeshStandardMaterial({
+            map: createAppleTexture(),
             color: 0xdd2222,
             metalness: 0.2,
             roughness: 0.5,
