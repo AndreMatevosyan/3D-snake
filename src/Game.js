@@ -239,6 +239,14 @@ class Game {
             this.cameraController.update();
         }
 
+        // Fade walls between camera and snake head so they don't block the view
+        if (this.cube && this.camera && this.snake) {
+            this.cube.updateWallTransparency(
+                this.camera.position,
+                this.snake.getHeadPosition()
+            );
+        }
+
         // Keep HUD in sync with level system and update display
         this.currentLevel = this.levelSystem.currentLevel;
         updateHUD(

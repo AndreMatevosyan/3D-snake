@@ -37,40 +37,45 @@ class Cube {
     initialize() {
         const { wallThickness } = CONFIG.cube;
         const halfSize = this.size / 2;
-
-        const material = new THREE.MeshPhysicalMaterial({
-            color: 0xe8f4fc,
-            transparent: true,
-            opacity: 0.12,
-            roughness: 0.02,
-            metalness: 0.02,
-            side: THREE.DoubleSide,
-            depthWrite: false,
-        });
-        this.materials.push(material);
-
-        const edgeMaterial = new THREE.LineBasicMaterial({
-            color: 0x88ccff,
-            linewidth: 2,
-        });
-        this.materials.push(edgeMaterial);
+        this.baseOpacity = 0.12;
 
         const wallDefs = [
-            ['top',    [0,  halfSize + wallThickness / 2, 0], [this.size, wallThickness, this.size]],
-            ['bottom', [0, -halfSize - wallThickness / 2, 0], [this.size, wallThickness, this.size]],
-            ['left',   [-halfSize - wallThickness / 2, 0, 0], [wallThickness, this.size, this.size]],
-            ['right',  [ halfSize + wallThickness / 2, 0, 0], [wallThickness, this.size, this.size]],
-            ['front',  [0, 0,  halfSize + wallThickness / 2], [this.size, this.size, wallThickness]],
-            ['back',   [0, 0, -halfSize - wallThickness / 2], [this.size, this.size, wallThickness]],
+            ['top',    [0,  halfSize + wallThickness / 2, 0], [this.size, wallThickness, this.size], new THREE.Vector3( 0,  1,  0)],
+            ['bottom', [0, -halfSize - wallThickness / 2, 0], [this.size, wallThickness, this.size], new THREE.Vector3( 0, -1,  0)],
+            ['left',   [-halfSize - wallThickness / 2, 0, 0], [wallThickness, this.size, this.size], new THREE.Vector3(-1,  0,  0)],
+            ['right',  [ halfSize + wallThickness / 2, 0, 0], [wallThickness, this.size, this.size], new THREE.Vector3( 1,  0,  0)],
+            ['front',  [0, 0,  halfSize + wallThickness / 2], [this.size, this.size, wallThickness], new THREE.Vector3( 0,  0,  1)],
+            ['back',   [0, 0, -halfSize - wallThickness / 2], [this.size, this.size, wallThickness], new THREE.Vector3( 0,  0, -1)],
         ];
 
-        for (const [name, pos, dims] of wallDefs) {
+        for (const [name, pos, dims, normal] of wallDefs) {
+            const wallMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xe8f4fc,
+                transparent: true,
+                opacity: this.baseOpacity,
+                roughness: 0.02,
+                metalness: 0.02,
+                side: THREE.DoubleSide,
+                depthWrite: false,
+            });
+            this.materials.push(wallMaterial);
+
+            const edgeMaterial = new THREE.LineBasicMaterial({
+                color: 0x88ccff,
+                transparent: true,
+                opacity: 1.0,
+                linewidth: 2,
+            });
+            this.materials.push(edgeMaterial);
+
             const geometry = createBoxGeometry(dims[0], dims[1], dims[2]);
             this.geometries.push(geometry);
 
-            const mesh = new THREE.Mesh(geometry, material);
+            const mesh = new THREE.Mesh(geometry, wallMaterial);
             mesh.position.set(pos[0], pos[1], pos[2]);
             mesh.userData.wallName = name;
+            mesh.userData.normal = normal;
+            mesh.userData.edgeMaterial = edgeMaterial;
             mesh.castShadow = true;
             mesh.receiveShadow = true;
 
@@ -86,6 +91,36 @@ class Cube {
         }
 
         this.group.position.copy(this.position);
+    }
+
+    /**
+     * Fade walls that sit between cameraPos and targetPos so they don't
+     * block the player's view. Other walls restore to base opacity.
+     */
+    updateWallTransparency(cameraPos, targetPos) {
+        const toTarget = new THREE.Vector3().subVectors(targetPos, cameraPos).normalize();
+
+        for (const wall of this.walls) {
+            const normal = wall.userData.normal;
+            const wallCenter = wall.position;
+
+            // Vector from camera to wall center
+            const toWall = new THREE.Vector3().subVectors(wallCenter, cameraPos);
+            const dotDir = toWall.dot(toTarget);
+
+            // Wall is "between" if the camera-to-wall direction aligns with
+            // camera-to-target AND the wall faces toward the camera
+            const facingCamera = normal.dot(toTarget) < -0.1;
+            const isBetween = facingCamera && dotDir > 0 && dotDir < cameraPos.distanceTo(targetPos);
+
+            const targetOpacity = isBetween ? 0.0 : this.baseOpacity;
+            const targetEdgeOpacity = isBetween ? 0.05 : 1.0;
+
+            // Smooth lerp for gradual fade
+            wall.material.opacity += (targetOpacity - wall.material.opacity) * 0.15;
+            const edgeMat = wall.userData.edgeMaterial;
+            edgeMat.opacity += (targetEdgeOpacity - edgeMat.opacity) * 0.15;
+        }
     }
 
     getBounds() {

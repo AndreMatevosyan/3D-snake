@@ -55,7 +55,7 @@ A browser-based 3D arcade game where you control a snake trapped inside a transp
 
 ### Level System
 - ✅ Progressive difficulty scaling
-- ⬜ Cube breaking effects
+- ✅ Cube breaking effects
 - ✅ Speed and size progression
 
 ## Technologies Used
