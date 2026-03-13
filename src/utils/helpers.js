@@ -114,8 +114,9 @@ export function updateHUD(level, score, length) {
 
 /**
  * Show overlay screen (game over, level complete, etc.)
+ * @param {string} [bodyClass='game-over'] - Class to add to body (e.g. 'paused')
  */
-export function showOverlay(title, message, buttonText, callback) {
+export function showOverlay(title, message, buttonText, callback, bodyClass = 'game-over') {
     const overlay = document.createElement('div');
     overlay.className = 'overlay active';
     overlay.innerHTML = `
@@ -125,16 +126,17 @@ export function showOverlay(title, message, buttonText, callback) {
             <button class="button">${buttonText}</button>
         </div>
     `;
-    
+
     const button = overlay.querySelector('.button');
     button.addEventListener('click', () => {
         overlay.remove();
-        document.body.classList.remove('game-over');
+        document.body.classList.remove(bodyClass);
         if (callback) callback();
     });
 
-    document.body.classList.add('game-over');
+    document.body.classList.add(bodyClass);
     document.body.appendChild(overlay);
+    return overlay;
 }
 
 export default {

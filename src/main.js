@@ -14,5 +14,4 @@ if (document.readyState === 'loading') {
 
 function initGame() {
     const game = new Game();
-    game.start();
 }

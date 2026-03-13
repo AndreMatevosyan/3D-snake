@@ -45,7 +45,9 @@ class Game {
         this.lastTime = 0;
         this.deltaTime = 0;
         this.frameCount = 0;
-        
+        this.pauseOverlay = null;
+        this.showingIntro = true;
+
         this.initialize();
     }
     
@@ -105,6 +107,66 @@ class Game {
         this.apple = new Apple();
         this.apple.initialize();
         this.spawnApple();
+
+        this._boundKeyDown = this.onPauseKeyDown.bind(this);
+        document.addEventListener('keydown', this._boundKeyDown);
+
+        const pauseBtn = document.getElementById('pause-btn');
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => this.togglePause());
+        }
+
+        this.showIntroScreen();
+    }
+
+    showIntroScreen() {
+        this.introOverlay = showOverlay(
+            '3D Snake',
+            'Press P to start',
+            'Play',
+            () => this.hideIntroAndStart(),
+            'intro'
+        );
+        this.introLoop();
+    }
+
+    introLoop() {
+        if (!this.showingIntro) return;
+        if (this.apple) this.apple.update(1 / 60);
+        if (this.scene && this.camera && this.renderSystem) {
+            this.renderSystem.render(this.scene.getScene(), this.camera);
+        }
+        requestAnimationFrame(() => this.introLoop());
+    }
+
+    hideIntroAndStart() {
+        this.showingIntro = false;
+        if (this.introOverlay?.parentNode) {
+            this.introOverlay.remove();
+        }
+        this.introOverlay = null;
+        document.body.classList.remove('intro');
+        this.start();
+    }
+
+    onPauseKeyDown(event) {
+        if ((event.code || event.key) !== 'KeyP' || event.repeat) return;
+        event.preventDefault();
+
+        if (this.showingIntro) {
+            this.hideIntroAndStart();
+        } else if (this.isRunning) {
+            this.togglePause();
+        }
+    }
+
+    togglePause() {
+        if (!this.isRunning) return;
+        if (this.isPaused) {
+            this.resume();
+        } else {
+            this.pause();
+        }
     }
 
     spawnApple() {
@@ -140,6 +202,16 @@ class Game {
         this.lastTime = currentTime;
         
         this.frameCount++;
+
+        if (this.isPaused) {
+            if (this.scene && this.camera && this.renderSystem) {
+                this.renderSystem.render(this.scene.getScene(), this.camera);
+            }
+            if (this.isRunning) {
+                window.requestAnimationFrame(this.gameLoop.bind(this));
+            }
+            return;
+        }
         
         // Update snake
         if (this.snake && this.inputController) {
@@ -269,13 +341,24 @@ class Game {
     }
     
     pause() {
-        // TODO: Pause the game
         this.isPaused = true;
+        document.exitPointerLock?.();
+        this.pauseOverlay = showOverlay(
+            'Paused',
+            'Press P to resume',
+            'Resume',
+            () => this.resume(),
+            'paused'
+        );
     }
-    
+
     resume() {
-        // TODO: Resume the game
         this.isPaused = false;
+        if (this.pauseOverlay?.parentNode) {
+            this.pauseOverlay.remove();
+        }
+        this.pauseOverlay = null;
+        document.body.classList.remove('paused');
     }
     
     dispose() {

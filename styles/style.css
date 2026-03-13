@@ -33,6 +33,31 @@ body {
     pointer-events: none;
 }
 
+#ui-container #pause-btn {
+    pointer-events: all;
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    width: 44px;
+    height: 44px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #00ff00;
+    border-radius: 8px;
+    color: #00ff00;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+#pause-btn:hover {
+    background: rgba(0, 255, 0, 0.2);
+    box-shadow: 0 0 12px #00ff00;
+}
+
 #crosshair {
     position: absolute;
     top: 50%;
@@ -139,8 +164,22 @@ body {
     display: flex;
 }
 
+body.intro #crosshair,
+body.intro #wall-distance-dial,
+body.intro #pause-btn,
+body.intro #hud {
+    display: none;
+}
+
 body.game-over #crosshair,
-body.game-over #wall-distance-dial {
+body.game-over #wall-distance-dial,
+body.game-over #pause-btn {
+    display: none;
+}
+
+body.paused #pause-btn,
+body.paused #crosshair,
+body.paused #wall-distance-dial {
     display: none;
 }
 
