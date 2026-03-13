@@ -46,7 +46,6 @@ A browser-based 3D arcade game where you control a snake trapped inside a transp
 ### Camera System
 - ✅ Third-person follow camera
 - ✅ Smooth lerp-based tracking
-- ⬜ Camera shake effects
 
 ### Collision Detection
 - ✅ Snake-apple collision
@@ -95,3 +94,11 @@ Game settings can be modified in `src/config.js`:
 - Power-ups and special items
 - Leaderboard system
 - Mobile controls support
+
+### How to Run
+```bash
+npm install 
+```
+```bash
+npm run dev
+```
