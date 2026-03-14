@@ -74,11 +74,3 @@ export function showOverlay(title, message, buttonText, callback, bodyClass = 'g
     document.body.appendChild(overlay);
     return overlay;
 }
-
-export default {
-    randomPointInBounds,
-    createBoxGeometry,
-    distanceToBoxBounds,
-    updateHUD,
-    showOverlay,
-};

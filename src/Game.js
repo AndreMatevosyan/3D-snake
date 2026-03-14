@@ -68,17 +68,8 @@ class Game {
         const container = document.getElementById('game-container');
         this.renderSystem = new RenderSystem(container);
 
-        console.log('RenderSystem initialized');
-        console.log('Canvas created:', this.renderSystem.getCanvas());
-        console.log('Size:', this.renderSystem.getSize());
-        
-        // Initialize GameScene
         this.scene = new GameScene();
-        console.log('GameScene initialized');
-        
-        // Initialize InputController with canvas
         this.inputController = new InputController(this.renderSystem.getCanvas());
-        console.log('InputController initialized');
         
         // Create Three.js camera
         const { width, height } = this.renderSystem.getSize();
@@ -88,11 +79,7 @@ class Game {
             CONFIG.camera.near,
             CONFIG.camera.far
         );
-        console.log('Camera initialized');
-        
-        // Initialize CameraController
         this.cameraController = new CameraController(this.camera, this.inputController);
-        console.log('CameraController initialized');
 
         // Create cube (container walls) and add to scene
         this.cube = new Cube();
@@ -328,7 +315,6 @@ class Game {
                 const prevLevel = this.levelSystem.currentLevel;
                 this.levelSystem.nextLevel();
                 this.currentLevel = this.levelSystem.currentLevel;
-                console.log(`LEVEL UP: ${prevLevel} → ${this.currentLevel} | Speed multiplier: ${this.levelSystem.getSpeedMultiplier()}`);
                 this.applyLevelSettings({ animate: true });
                 this.wallCollisionGraceFrames = 60;
             }
@@ -409,7 +395,6 @@ class Game {
                     const prevLevel = this.levelSystem.currentLevel;
                     this.levelSystem.nextLevel();
                     this.currentLevel = this.levelSystem.currentLevel;
-                    console.log(`LEVEL UP: ${prevLevel} → ${this.currentLevel} | Speed multiplier: ${this.levelSystem.getSpeedMultiplier()}`);
                     this.applyLevelSettings({ animate: true });
                     this.wallCollisionGraceFrames = 60;
                 }
@@ -473,25 +458,10 @@ class Game {
             if (el) el.textContent = Math.max(0, dist).toFixed(1);
         }
 
-        // Render the scene
         if (this.scene && this.camera && this.renderSystem) {
             this.renderSystem.render(this.scene.getScene(), this.camera);
         }
-        
-        // DEBUG: Log input controller state every 240 frames (~4 seconds at 60fps)
-        if (this.frameCount % 240 === 0 && this.inputController) {
-            const rotation = this.inputController.getRotation();
-            const pressedKeys = Object.entries(this.inputController.keys)
-                .filter(([key, pressed]) => pressed)
-                .map(([key]) => key);
-            
-            console.log(
-                `[Frame ${this.frameCount}] Rotation - Yaw: ${rotation.yaw.toFixed(2)}, Pitch: ${rotation.pitch.toFixed(2)} | ` +
-                `Pointer Locked: ${this.inputController.isPointerLocked} | ` +
-                `Keys: ${pressedKeys.length > 0 ? pressedKeys.join(', ') : 'none'}`
-            );
-        }
-        
+
         if (this.isRunning) {
             window.requestAnimationFrame(this.gameLoop.bind(this));
         }
